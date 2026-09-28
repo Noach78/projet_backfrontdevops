@@ -3,20 +3,24 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-comptes = {"A": 10, "B": 0}
+class Compte(BaseModel):
+    nom: str
+    solde: int
 
-def virement(source: str, destitation:str, montant:int):
+comptes = [Compte(nom="A", solde=10), Compte(nom="B", solde=0)]
+
+def virement(source: Compte, destitation: Compte, montant:int):
     if verifierVirement(source, montant):
-        comptes[source] -= montant
-        comptes[destitation] += montant
+        source.solde -= montant
+        destitation.solde += montant
 
-def verifierVirement(source: str, montant:int):
-    if montant <= comptes[source]:
+def verifierVirement(source: Compte, montant:int):
+    if montant <= source.solde:
         return True
     return False
 
-virement("A", "B", 5)
-virement("A", "B", 100)
+virement(comptes[0], comptes[1], 5)
+virement(comptes[0], comptes[1], 100)
 print(comptes)
     
     
