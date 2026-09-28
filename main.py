@@ -18,9 +18,20 @@ class Account():
         return self.sold
 
     def show_sold(self):
-        print(self.sold)
-    
+        print(self.sold)    
 
 def transfer(source : Account, recipient : Account, amount : int):
     source.debit(amount)
     recipient.credit(amount)
+
+@app.post("/transfer/{amount}")
+def transfer_endpoint(amount: int):
+    source = Account(10)  
+    recipient = Account(10)
+    transfer(source, recipient, amount)
+    return {
+        "source_sold": source.sold,
+        "recipient_sold": recipient.sold,
+    }
+    
+    
