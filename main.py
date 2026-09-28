@@ -3,24 +3,24 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-class Compte(BaseModel):
-    nom: str
-    solde: int
+class Account():
+    def __init__(self, sold: int):
+        self.sold = sold
 
-comptes = [Compte(nom="A", solde=10), Compte(nom="B", solde=0)]
+    def credit(self, amount: int):
+        self.sold += amount
+        return self.sold
 
-def virement(source: Compte, destitation: Compte, montant:int):
-    if verifierVirement(source, montant):
-        source.solde -= montant
-        destitation.solde += montant
+    def debit(self, amount: int):
+        if amount > self.sold:
+            raise ValueError("Insufficient funds")
+        self.sold -= amount
+        return self.sold
 
-def verifierVirement(source: Compte, montant:int):
-    if montant <= source.solde:
-        return True
-    return False
-
-virement(comptes[0], comptes[1], 5)
-virement(comptes[0], comptes[1], 100)
-print(comptes)
+    def show_sold(self):
+        print(self.sold)
     
-    
+
+def transfer(source : Account, recipient : Account, amount : int):
+    source.debit(amount)
+    recipient.credit(amount)
