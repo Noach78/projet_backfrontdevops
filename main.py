@@ -20,18 +20,58 @@ class Account():
     def show_sold(self):
         print(self.sold)    
 
-def transfer(source : Account, recipient : Account, amount : int):
-    source.debit(amount)
-    recipient.credit(amount)
+class User():
+    def __init__(self, name: str):
+        self.name = name
 
-@app.post("/transfer/{amount}")
-def transfer_endpoint(amount: int):
-    source = Account(10)  
-    recipient = Account(10)
+    def create_account(self):
+        self.account = Account(10)
+
+    def get_account(self):
+        return self.account
+
+class UserCreate(BaseModel):
+    name: str
+
+users = []
+
+def find_user(name: str):
+    for user in users:
+        if user.name == name:
+            return user
+    return None
+
+def transfer(source_name:User, recipient_name:User, amount : int):
+    source_name.get_account().debit(amount)
+    recipient_name.get_account().credit(amount)
+
+@app.get("/users")
+def get_users():
+    return [{"name": user.name, "sold": user.account.sold} for user in users]
+
+@app.get("/user/{name}")
+def get_user(name: str):
+    for user in users:
+        if user.name == name:
+            return {"name": user.name, "sold": user.account.sold}
+    return {"error": "User not found"}
+    
+
+@app.post("/user")
+def create_user(user_data: UserCreate):
+    user = User(user_data.name)
+    user.create_account()
+    users.append(user)
+    return {"message": f"User {user_data.name} created successfully."}
+
+@app.post("/transfer/{source_name}/{recipient_name}/{amount}")
+def transfer_endpoint(source_name: str, recipient_name: str, amount: int):
+    source = find_user(source_name)
+    recipient = find_user(recipient_name)
+    if source is None or recipient is None:
+        return {"error": "User not found"}
     transfer(source, recipient, amount)
     return {
-        "source_sold": source.sold,
-        "recipient_sold": recipient.sold,
+        "source_sold": source.account.sold,
+        "recipient_sold": recipient.account.sold,
     }
-    
-    
