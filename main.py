@@ -49,9 +49,14 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     
     if len(user_data.password) < 8 :
         return {"Error !": "Your password is too short"}
+
     user_data.password = bcrypt.hash(user_data.password)
     user = User(user_data.name, user_data.email, user_data.password)
     user_repository.add_user(user)
+    
+    create_account(user_data.name, user_repository)
+    user.get_account()[0].credit(100)
+    
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
