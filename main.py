@@ -1,134 +1,13 @@
 from fastapi import Depends, FastAPI
-from pydantic import BaseModel
-from abc import ABC, abstractmethod
-from datetime import datetime
 from passlib.hash import bcrypt
 import jwt
+from datetime import datetime
+
+from classes.user import UserRepository
+from classes.transaction import TransactionRepository, InMemoryTransactionRepository
+from classes.user import User, UserCreate, LoginUser, InMemoryUserRepository
 
 app = FastAPI()
-
-def random_id():
-    return int(datetime.now().timestamp() * 1000)
-
-class Account():
-    def __init__(self, user_id: int, sold: int):
-        self.id = random_id()
-        self.user_id = user_id
-        self.sold = sold
-
-    def credit(self, amount: int):
-        self.sold += amount
-        return self.sold
-
-    def debit(self, amount: int):
-        if amount > self.sold:
-            raise ValueError("Insufficient funds")
-        self.sold -= amount
-        return self.sold
-
-    def show_sold(self):
-        print(self.sold)    
-
-class User():
-    def __init__(self, name: str, email: str, hashed_password: str):
-        self.id = random_id()
-        self.name = name
-        self.email = email
-        self.hashed_password = hashed_password
-        self.account = []
-
-    def create_account(self):
-        self.account = [Account(self.id, 0)]
-
-    def get_account(self):
-        return self.account
-
-class Transaction:
-    def __init__(self, tx_id: int, source: User, recipient: User, amount: int):
-        self.id = tx_id
-        self.source = source
-        self.recipient = recipient
-        self.amount = amount
-        self.created_at = datetime.now()
-        self.is_cancelled = False
-
-class UserCreate(BaseModel):
-    name: str
-    email : str
-    password: str
-
-class LoginUser(BaseModel):
-    email: str
-    password: str
-
-class TransactionRepository(ABC):
-    def __init__(self):
-        self.transactions = []
-        self.transaction_counter = 1
-
-    @abstractmethod
-    def add_transaction(self, transaction: Transaction):
-        pass
-
-    @abstractmethod
-    def find_transaction(self, transaction_id: int):
-        pass
-
-class InMemoryTransactionRepository(TransactionRepository):
-    def add_transaction(self, transaction: Transaction):
-        self.transactions.append(transaction)
-
-    def find_transaction(self, transaction_id: int):
-        for transaction in self.transactions:
-            if transaction.id == transaction_id:
-                return transaction
-        return None
-
-class UserRepository(ABC):
-    def __init__(self):
-        self.users = []
-    
-    @abstractmethod
-    def find_user(self, name: str):
-        pass
-
-    @abstractmethod
-    def find_user_by_email(self, email: str):
-        pass
-
-    @abstractmethod
-    def add_user(self, user: User):
-        pass
-
-    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: TransactionRepository):
-        pass
-
-class InMemoryUserRepository(UserRepository):
-    def find_user(self, name: str):
-        for user in self.users:
-            if user.name == name:
-                return user
-        return None
-
-    def find_user_by_email(self, email: str):
-        for user in self.users:
-            if user.email == email:
-                return user
-        return None
-
-    def add_user(self, user: User):
-        self.users.append(user)
-
-    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: TransactionRepository):
-        global transaction_counter
-        source.get_account().debit(amount)
-        recipient.get_account().credit(amount)
-        
-        tx = Transaction(transaction_counter, source, recipient, amount)
-        transaction_repository.add_transaction(tx)
-        transaction_counter += 1
-        return tx
-
 
 user_repository = InMemoryUserRepository()
 transaction_repository = InMemoryTransactionRepository()
@@ -232,7 +111,6 @@ def transaction_history(name: str, user_repository: UserRepository = Depends(get
                 "is_cancelled": transaction.is_cancelled
             })
             
-    # tri du plus récent au plus ancien
     user_transactions.sort(key=lambda tx: tx["created_at"], reverse=True)
     
     return {"transactions": user_transactions}
