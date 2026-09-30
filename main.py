@@ -64,7 +64,7 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     user = User(user_data.name, user_data.email, user_data.password)
     user_repository.add_user(user)
     
-    create_account(user_data.name, user_repository)
+    create_account(user_data.name, user_repository, account_repository)
     account_repository.find_account(user.id)[0].credit(100)
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
@@ -81,16 +81,17 @@ def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_rep
     return {"error": "Invalid credentials"}
 
 @app.post("/create_account/{name}")
-def create_account(name: str, user_repository: Any = Depends(get_user_repository)):
+def create_account(name: str, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     user = user_repository.find_user(name)
     if user is None:
         return {"error": "User not found"}
-    account = Account(user.id, 0)
-    account_repository = get_account_repository()
-    account_repository.add_account(account)
+    
     account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id)
-    if account_count > 1:
-        return {"error": "User already has an account"}
+    if account_count >= 3:
+        return {"error": "User already has to many accounts"}
+    
+    account = Account(user.id, 0)
+    account_repository.add_account(account)
     return {"message": f"Account created for user {name}"}
 
 @app.post("/transfer/{source_name}/{recipient_name}/{amount}")
@@ -113,16 +114,19 @@ def credit_endpoint(name: str, amount: int, user_repository: Any = Depends(get_u
     user.get_account()[0].credit(amount)
     return {"sold": user.account[0].sold}
 
-@app.post("/account_info/{name}")
+@app.get("/account_info/{name}")
 def account_info(name: str, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     user = user_repository.find_user(name)
+    json = []
     for account in account_repository.accounts:
         if account.get_user_id() == user.id:
-            return {
+            json.append({
                 "account_id": account.get_id(),
                 "sold": account.get_sold(),
                 "date_created": account.get_date_created()
-            }
+            })
+    if json:
+        return {"accounts": json}
     return {"error": "Account not found"}
 
 @app.post("/cancel-transaction/{transaction_id}")
