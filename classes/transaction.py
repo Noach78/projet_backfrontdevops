@@ -1,9 +1,12 @@
-import datetime
+from datetime import datetime
 from abc import ABC, abstractmethod
-from .user import User
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .user import User
 
 class Transaction:
-    def __init__(self, id: int, source: User, recipient: User, amount: int):
+    def __init__(self, id: int, source: "User", recipient: "User", amount: int):
         self.id = int(datetime.now().timestamp() * 1000)
         self.source = source
         self.recipient = recipient

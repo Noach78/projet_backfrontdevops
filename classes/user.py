@@ -1,5 +1,5 @@
 from .transaction import TransactionRepository, Transaction
-import datetime
+from datetime import datetime
 from pydantic import BaseModel
 from abc import ABC, abstractmethod
 

@@ -5,6 +5,8 @@ import jwt
 from datetime import datetime
 from typing import Any
 
+from classes.account import Account, AccountRepository, InMemoryAccountRepository
+
 class UserCreate(BaseModel):
     name: str
     email: str
@@ -18,6 +20,7 @@ class LoginUser(BaseModel):
 app = FastAPI()
 
 user_repository = None
+account_repository = None
 transaction_repository = None
 
 def get_user_repository():
@@ -26,6 +29,13 @@ def get_user_repository():
         from classes.user import InMemoryUserRepository
         user_repository = InMemoryUserRepository()
     return user_repository
+
+def get_account_repository():
+    global account_repository
+    if account_repository is None:
+        from classes.account import InMemoryAccountRepository
+        account_repository = InMemoryAccountRepository()
+    return account_repository
 
 def get_transaction_repository():
     global transaction_repository
@@ -41,7 +51,7 @@ def get_user(name: str, user_repository: Any = Depends(get_user_repository)):
     return {"id": user.id, "name": user.name, "email": user.email}
             
 @app.post("/create_user")
-def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_repository)):
+def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     from classes.user import User
     for user in user_repository.users:
         if user.email == user_data.email:
@@ -55,8 +65,7 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     user_repository.add_user(user)
     
     create_account(user_data.name, user_repository)
-    user.get_account()[0].credit(100)
-    
+    account_repository.find_account(user.id)[0].credit(100)
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
@@ -76,8 +85,11 @@ def create_account(name: str, user_repository: Any = Depends(get_user_repository
     user = user_repository.find_user(name)
     if user is None:
         return {"error": "User not found"}
-    user.create_account()
-    if len(user.account) > 1:
+    account = Account(user.id, 0)
+    account_repository = get_account_repository()
+    account_repository.add_account(account)
+    account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id)
+    if account_count > 1:
         return {"error": "User already has an account"}
     return {"message": f"Account created for user {name}"}
 
@@ -100,6 +112,18 @@ def credit_endpoint(name: str, amount: int, user_repository: Any = Depends(get_u
         return {"error": "User not found"}
     user.get_account()[0].credit(amount)
     return {"sold": user.account[0].sold}
+
+@app.post("/account_info/{name}")
+def account_info(name: str, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
+    user = user_repository.find_user(name)
+    for account in account_repository.accounts:
+        if account.get_user_id() == user.id:
+            return {
+                "account_id": account.get_id(),
+                "sold": account.get_sold(),
+                "date_created": account.get_date_created()
+            }
+    return {"error": "Account not found"}
 
 @app.post("/cancel-transaction/{transaction_id}")
 def cancel_transaction(transaction_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
@@ -139,4 +163,3 @@ def transaction_history(name: str, user_repository: Any = Depends(get_user_repos
     user_transactions.sort(key=lambda tx: tx["created_at"], reverse=True)
     
     return {"transactions": user_transactions}
-    
