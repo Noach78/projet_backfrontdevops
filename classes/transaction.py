@@ -1,6 +1,6 @@
 import datetime
 from abc import ABC, abstractmethod
-from user import User
+from .user import User
 
 class Transaction:
     def __init__(self, id: int, source: User, recipient: User, amount: int):

@@ -1,4 +1,4 @@
-import transaction 
+from .transaction import TransactionRepository, Transaction
 import datetime
 from pydantic import BaseModel
 from abc import ABC, abstractmethod
@@ -38,7 +38,7 @@ class UserRepository(ABC):
     def add_user(self, user: User):
         pass
 
-    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: transaction.TransactionRepository):
+    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: TransactionRepository):
         pass
 
 class InMemoryUserRepository(UserRepository):
@@ -57,11 +57,11 @@ class InMemoryUserRepository(UserRepository):
     def add_user(self, user: User):
         self.users.append(user)
 
-    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: transaction.TransactionRepository):
+    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: TransactionRepository):
         global transaction_counter
         source.get_account().debit(amount)
         recipient.get_account().credit(amount)
         
-        tx = transaction.Transaction(source, recipient, amount)
+        tx = Transaction(source, recipient, amount)
         transaction_repository.add_transaction(tx)
         return tx
