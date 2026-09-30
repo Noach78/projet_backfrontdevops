@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .user import User
+    from classes.account import Account
 
 class Transaction:
-    def __init__(self, id: int, source: "User", recipient: "User", amount: int):
+    def __init__(self, source: "Account", recipient: "Account", amount: int):
         self.id = int(datetime.now().timestamp() * 1000)
         self.source = source
         self.recipient = recipient

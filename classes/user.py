@@ -1,4 +1,3 @@
-from .transaction import TransactionRepository, Transaction
 from datetime import datetime
 from pydantic import BaseModel
 from abc import ABC, abstractmethod
@@ -27,24 +26,17 @@ class UserRepository(ABC):
         self.users = []
     
     @abstractmethod
-    def find_user(self, name: str):
-        pass
-
-    @abstractmethod
-    def find_user_by_email(self, email: str):
+    def find_user(self, id: int):
         pass
 
     @abstractmethod
     def add_user(self, user: User):
         pass
 
-    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: TransactionRepository):
-        pass
-
 class InMemoryUserRepository(UserRepository):
-    def find_user(self, name: str):
+    def find_user(self, id: int):
         for user in self.users:
-            if user.name == name:
+            if user.id == id:
                 return user
         return None
 
@@ -56,12 +48,3 @@ class InMemoryUserRepository(UserRepository):
 
     def add_user(self, user: User):
         self.users.append(user)
-
-    def transfer(self, source: User, recipient: User, amount: int, transaction_repository: TransactionRepository):
-        global transaction_counter
-        source.get_account().debit(amount)
-        recipient.get_account().credit(amount)
-        
-        tx = Transaction(source, recipient, amount)
-        transaction_repository.add_transaction(tx)
-        return tx
