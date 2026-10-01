@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 if TYPE_CHECKING:
     from classes.transaction import Transaction, TransactionRepository
 
 class Account():
-    def __init__(self, user_id: int, sold: int, date_created: datetime = None, is_main: bool = False):
-        self.id = int(datetime.now().timestamp() * 1000)
+    def __init__(self, user_id: int, sold: int, date_created: datetime = None):
+        self.id = uuid4().int
         self.user_id = user_id
         self.sold = sold
         self.date_created = date_created or datetime.now()
-        self.is_main = is_main
-        self.is_closed = False
+        self.closed = False
 
     def get_user_id(self):
         return self.user_id
@@ -39,6 +39,12 @@ class Account():
             raise ValueError("Insufficient funds")
         self.sold -= amount
         return self.sold
+
+    def is_closed(self):
+        return self.closed
+
+    def close(self):
+        self.closed = True
 
 class AccountRepository(ABC):
     def __init__(self):

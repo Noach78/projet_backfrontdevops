@@ -1,13 +1,14 @@
 from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 if TYPE_CHECKING:
     from classes.account import Account
 
 class Transaction:
     def __init__(self, source: "Account", recipient: "Account", amount: int):
-        self.id = int(datetime.now().timestamp() * 1000)
+        self.id = uuid4().int
         self.source = source
         self.recipient = recipient
         self.amount = amount
