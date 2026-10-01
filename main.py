@@ -44,10 +44,10 @@ def get_transaction_repository():
         transaction_repository = InMemoryTransactionRepository()
     return transaction_repository
 
-@app.get("/user_info/{id}")
-def get_user(id: int, user_repository: Any = Depends(get_user_repository)):
+@app.get("/user_info/{name}")
+def get_user(name: str, user_repository: Any = Depends(get_user_repository)):
     print(f"{user_repository.users}")
-    user = user_repository.find_user(id)
+    user = user_repository.find_user(name)
     return {"id": user.id, "name": user.name, "email": user.email}
             
 @app.post("/create_user")
@@ -64,8 +64,8 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     user = User(user_data.name, user_data.email, user_data.password)
     user_repository.add_user(user)
     
-    create_account(user.id, user_repository, account_repository)
-    account_repository.find_user_accounts(user.id)[0].credit(100)
+    create_account(user_data.name, user_repository)
+    account_repository.find_account(user.id)[0].credit(100)
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
@@ -80,59 +80,61 @@ def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_rep
 
     return {"error": "Invalid credentials"}
 
-@app.post("/create_account/{id}")
-def create_account(id: int, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
-    user = user_repository.find_user(id)
+@app.post("/create_account/{name}")
+def create_account(name: str, user_repository: Any = Depends(get_user_repository)):
+    user = user_repository.find_user(name)
     if user is None:
         return {"error": "User not found"}
-    
-    account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id)
-    if account_count >= 3:
-        return {"error": "User already has to many accounts"}
-    
     account = Account(user.id, 0)
+    account_repository = get_account_repository()
     account_repository.add_account(account)
-    return {"message": f"Account created for user {id}. (Account ID: {account.get_id()})"}
+    account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id)
+    if account_count > 1:
+        return {"error": "User already has an account"}
+    return {"message": f"Account created for user {name}"}
 
-@app.post("/transaction/{source_account_id}/{recipient_account_id}/{amount}")
-def transaction_endpoint(source_account_id: int, recipient_account_id: int, amount: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
-    
-    source_account = account_repository.find_account(source_account_id)
-    recipient_account = account_repository.find_account(recipient_account_id)
-
-    if source_account is None or recipient_account is None:
-        return {"error": "Source or recipient account not found"}
-    
-    if amount <= 0:
-        return {"error": "Amount must be greater than zero"}
-    
-    try:
-        tx = account_repository.transaction(source_account, recipient_account, amount, transaction_repository)
-        return {"message": f"Transaction successful. (Transaction ID: {tx.id})"}
-    except ValueError as e:
-        return {"error": str(e)}
-    
-
-@app.post("/credit/{account_id}/{amount}")
-def credit_endpoint(account_id: int, amount: int, account_repository: Any = Depends(get_account_repository)):
+@app.post("/delete_account/{account_id}")
+def delete_account(account_id: int, account_repository: Any = Depends(get_account_repository)):
     account = account_repository.find_account(account_id)
-    if account is None:
-        return {"error": "Account not found"}
+    if account is None :  
+        return {"error": "Account not found"}  
+    if account_id == 0:
+        return {"error": "Account 0 is reserved"}  
+    transfer_endpoint(account.get_user_id(), account.get_user_id(), account.get_sold())
+    account_repository.delete_account(account)
+    return {"message": f"Account deleted for user {account.get_user_id()}"}
     
-    account.credit(amount)
-    return {"sold": account.sold}
-
-
-@app.get("/account_info/{account_id}")
-def account_info(account_id: int, account_repository: Any = Depends(get_account_repository)):
-    account = account_repository.find_account(account_id)
-    if account is None:
-        return {"error": "Account not found"}
+@app.post("/transfer/{source_name}/{recipient_name}/{amount}")
+def transfer_endpoint(source_name: str, recipient_name: str, amount: int, user_repository: Any = Depends(get_user_repository), transaction_repository: Any = Depends(get_transaction_repository)):
+    source = user_repository.find_user(source_name)
+    recipient = user_repository.find_user(recipient_name)
+    if source is None or recipient is None:
+        return {"error": "User not found"}
+    user_repository.transfer(source, recipient, amount, transaction_repository)
     return {
-        "account_id": account.get_id(),
-        "sold": account.get_sold(),
-        "date_created": account.get_date_created()
+        "source_sold": source.account.sold,
+        "recipient_sold": recipient.account.sold,
     }
+
+@app.post("/credit/{name}/{amount}")
+def credit_endpoint(name: str, amount: int, user_repository: Any = Depends(get_user_repository)):
+    user = user_repository.find_user(name)
+    if user is None:
+        return {"error": "User not found"}
+    user.get_account()[0].credit(amount)
+    return {"sold": user.account[0].sold}
+
+@app.post("/account_info/{name}")
+def account_info(name: str, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
+    user = user_repository.find_user(name)
+    for account in account_repository.accounts:
+        if account.get_user_id() == user.id:
+            return {
+                "account_id": account.get_id(),
+                "sold": account.get_sold(),
+                "date_created": account.get_date_created()
+            }
+    return {"error": "Account not found"}
 
 @app.post("/cancel-transaction/{transaction_id}")
 def cancel_transaction(transaction_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
@@ -146,41 +148,29 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
     if (datetime.now() - transaction.created_at).total_seconds() > 5:
         return {"error": "Transaction cannot be cancelled after 5 seconds"}
 
-    transaction.source.credit(transaction.amount)
-    transaction.recipient.debit(transaction.amount)
+    transaction.source.get_account().credit(transaction.amount)
+    transaction.recipient.get_account().debit(transaction.amount)
     transaction.is_cancelled = True
     return {"message": "Transaction cancelled successfully"}
 
-@app.post("/transaction-history/{account_id}")
-def transaction_history(account_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
+@app.post("/transaction-history/{name}")
+def transaction_history(name: str, user_repository: Any = Depends(get_user_repository), transaction_repository: Any = Depends(get_transaction_repository)):
+    user = user_repository.find_user(name)
+    if user is None:
+        return {"error": "User not found"}
+    
     user_transactions = []
     for transaction in transaction_repository.transactions:
-        if transaction.source.get_id() == account_id or transaction.recipient.get_id() == account_id:
+        if transaction.source == user or transaction.recipient == user:
             user_transactions.append({
                 "transaction_id": transaction.id,
-                "source": transaction.source.get_id(),
-                "recipient": transaction.recipient.get_id(),
+                "source": transaction.source.name,
+                "recipient": transaction.recipient.name,
                 "amount": transaction.amount,
                 "created_at": transaction.created_at,
                 "is_cancelled": transaction.is_cancelled
             })
-    user_transactions.sort(key=lambda x: x["created_at"], reverse=True)
-    return {"transactions": user_transactions}
-
-@app.get("/transaction-info/{transaction_id}")
-def transaction_info(transaction_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
-    transaction = None
-    for transaction in transaction_repository.transactions:
-        if transaction.id == transaction_id:
-            break
-    else:
-        return {"error": "Transaction not found"}
+            
+    user_transactions.sort(key=lambda tx: tx["created_at"], reverse=True)
     
-    return {
-        "transaction_id": transaction.id,
-        "source": transaction.source.get_id(),
-        "recipient": transaction.recipient.get_id(),
-        "amount": transaction.amount,
-        "created_at": transaction.created_at,
-        "is_cancelled": transaction.is_cancelled
-    }
+    return {"transactions": user_transactions}

@@ -6,11 +6,13 @@ if TYPE_CHECKING:
     from classes.transaction import Transaction, TransactionRepository
 
 class Account():
-    def __init__(self, user_id: int, sold: int, date_created: datetime = None):
+    def __init__(self, user_id: int, sold: int, date_created: datetime = None, is_main: bool = False):
         self.id = int(datetime.now().timestamp() * 1000)
         self.user_id = user_id
         self.sold = sold
         self.date_created = date_created or datetime.now()
+        self.is_main = is_main
+        self.is_closed = False
 
     def get_user_id(self):
         return self.user_id
@@ -25,10 +27,14 @@ class Account():
         return self.date_created
 
     def credit(self, amount: int):
+        if getattr(self, "is_closed", False):
+            raise ValueError("Account is closed")
         self.sold += amount
         return self.sold
 
     def debit(self, amount: int):
+        if getattr(self, "is_closed", False):
+            raise ValueError("Account is closed")
         if amount > self.sold:
             raise ValueError("Insufficient funds")
         self.sold -= amount
