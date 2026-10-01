@@ -72,8 +72,6 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     account_repository.find_account(user.id)[0].credit(100)
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
-
-
 @app.post("/login_user")
 def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_repository)):
     user = user_repository.find_user_by_email(user_data.email)
@@ -94,27 +92,45 @@ def create_account(name: str, user_repository: Any = Depends(get_user_repository
     account = Account(user.id, 0)
     account_repository = get_account_repository()
     account_repository.add_account(account)
-    account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id)
-    if account_count > 1:
-        return {"error": "User already has an account"}
+    account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id and not acc.is_closed())
+    if account_count >= 3:
+        return {"error": "User already has 3 accounts"}
     return {"message": f"Account created for user {name}"}
 
 @app.post("/close_account/{account_id}")
-def close_account(account_id: int, account_repository: Any = Depends(get_account_repository)):
+def close_account(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
     account = account_repository.find_account(account_id)
     if account is None:
         return {"error": "Account not found"}
+
+    has_pending_transaction = any(
+        not transaction.is_cancelled
+        and (transaction.source == account or transaction.recipient == account)
+        for transaction in transaction_repository.transactions
+    )
+    if has_pending_transaction:
+        return {"error": "Cannot close account with pending transactions"}
+
+    accounts = account_repository.find_user_accounts(account.get_user_id())
+    if accounts[0].get_id() == account_id:
+        return {"error": "Cannot close the primary account"}
+
+    account.debit(account.get_sold())
+    accounts[0].credit(account.get_sold())
+
     account.close()
     return {"message": f"Account {account_id} closed"}
 
 @app.post("/transaction/{source_account_id}/{recipient_account_id}/{amount}")
 def transaction_endpoint(source_account_id: int, recipient_account_id: int, amount: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
-    
     source_account = account_repository.find_account(source_account_id)
     recipient_account = account_repository.find_account(recipient_account_id)
 
     if source_account is None or recipient_account is None:
         return {"error": "Source or recipient account not found"}
+
+    if source_account.is_closed() or recipient_account.is_closed():
+        return {"error": "Source or recipient account is closed"}
     
     if amount <= 0:
         return {"error": "Amount must be greater than zero"}
@@ -160,6 +176,8 @@ def credit_endpoint(name: str, amount: int, user_repository: Any = Depends(get_u
     user = user_repository.find_user(name)
     if user is None:
         return {"error": "User not found"}
+    if not user.get_account():
+        return {"error": "User has no accounts"}
     user.get_account()[0].credit(amount)
     return {"sold": user.account[0].sold}
 
@@ -192,16 +210,19 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
     transaction.is_cancelled = True
     return {"message": "Transaction cancelled successfully"}
 
-@app.post("/transaction-history/{name}")
-def transaction_history(name: str, user_repository: Any = Depends(get_user_repository), transaction_repository: Any = Depends(get_transaction_repository)):
-    user = user_repository.find_user(name)
-    if user is None:
-        return {"error": "User not found"}
+@app.post("/transaction-history/{account_id}")
+def transaction_history(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
+    account = account_repository.find_account(account_id)
+    if account is None: 
+        return {"error": "Account not found"}
+
+    if account.is_closed():
+        return {"error": "Account is closed"}
     
-    user_transactions = []
+    transactions = []
     for transaction in transaction_repository.transactions:
-        if transaction.source == user or transaction.recipient == user:
-            user_transactions.append({
+        if transaction.source == account or transaction.recipient == account:
+            transactions.append({
                 "transaction_id": transaction.id,
                 "sourcde": transaction.source.get_id(),
                 "recipient": transaction.recipient.get_id(),
@@ -209,8 +230,8 @@ def transaction_history(name: str, user_repository: Any = Depends(get_user_repos
                 "created_at": transaction.created_at,
                 "is_cancelled": transaction.is_cancelled
             })
-    user_transactions.sort(key=lambda x: x["created_at"], reverse=True)
-    return {"transactions": user_transactions}
+    transactions.sort(key=lambda x: x["created_at"], reverse=True)
+    return {"transactions": transactions}
 
 @app.get("/transaction-info/{transaction_id}")
 def transaction_info(transaction_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
