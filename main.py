@@ -12,16 +12,21 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
-
 class LoginUser(BaseModel):
     email: str
     password: str
+
+class BeneficiaryCreate(BaseModel):
+    owner_id: int
+    name: str
+    account_id: int
 
 app = FastAPI()
 
 user_repository = None
 account_repository = None
 transaction_repository = None
+beneficiary_repository = None
 
 def get_user_repository():
     global user_repository
@@ -43,6 +48,13 @@ def get_transaction_repository():
         from classes.transaction import InMemoryTransactionRepository
         transaction_repository = InMemoryTransactionRepository()
     return transaction_repository
+
+def get_beneficiary_repository():
+    global beneficiary_repository
+    if beneficiary_repository is None:
+        from classes.beneficiary import InMemoryBeneficiaryRepository
+        beneficiary_repository = InMemoryBeneficiaryRepository()
+    return beneficiary_repository
 
 @app.get("/users")
 def get_users(user_repository: Any = Depends(get_user_repository)):
@@ -266,4 +278,47 @@ def transaction_info(transaction_id: int, transaction_repository: Any = Depends(
         "is_cancelled": transaction.is_cancelled
     }
 
-    
+@app.post("/add_beneficiary")
+def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository: Any = Depends(get_beneficiary_repository), account_repository: Any = Depends(get_account_repository)):
+    owner_account = account_repository.find_account(beneficiary_data.owner_id)
+    if owner_account is None:
+        return {"error": "Owner account not found"}
+
+    if owner_account.get_user_id() == beneficiary_data.account_id:
+        return {"error": "Beneficiary cannot be the same as the owner's account"}
+
+    beneficiary_account = account_repository.find_account(beneficiary_data.account_id)
+    if beneficiary_account is None:
+        return {"error": "Beneficiary account not found"}
+
+    for existing_beneficiary in beneficiary_repository.beneficiaries:
+        if existing_beneficiary.owner_id == beneficiary_data.owner_id and existing_beneficiary.account_id == beneficiary_data.account_id:
+            return {"error": "Beneficiary already added"}
+
+    if not beneficiary_data.name.strip():
+        return {"error": "Beneficiary name must be provided"}
+
+    from classes.beneficiary import Beneficiary
+    new_beneficiary = Beneficiary(beneficiary_data.owner_id, beneficiary_data.name, beneficiary_data.account_id)
+    beneficiary_repository.add_beneficiary(new_beneficiary)
+
+    return {"message": f"Beneficiary {beneficiary_data.name} added successfully. (Beneficiary ID: {new_beneficiary.id})"}
+
+@app.get("/beneficiaries/{owner_id}")
+def get_beneficiaries(owner_id: int, beneficiary_repository: Any = Depends(get_beneficiary_repository), account_repository: Any = Depends(get_account_repository)):
+    owner_account = account_repository.find_account(owner_id)
+    if owner_account is None:
+        return {"error": "Owner account not found"}
+
+    beneficiaries = [
+        {
+            "id": beneficiary.id,
+            "name": beneficiary.name,
+            "account_id": beneficiary.account_id,
+            "added_at": beneficiary.added_at
+        }
+        for beneficiary in beneficiary_repository.beneficiaries
+        if beneficiary.owner_id == owner_id
+    ]
+
+    return {"beneficiaries": beneficiaries}
