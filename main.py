@@ -68,8 +68,8 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     user = User(user_data.name, user_data.email, user_data.password)
     user_repository.add_user(user)
     
-    create_account(user_data.name, user_repository)
-    account_repository.find_account(user.id)[0].credit(100)
+    create_account(user.id, user_repository)
+    account_repository.find_user_accounts(user.id)[0].credit(100)
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
@@ -84,18 +84,20 @@ def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_rep
 
     return {"error": "Invalid credentials"}
 
-@app.post("/create_account/{name}")
-def create_account(name: str, user_repository: Any = Depends(get_user_repository)):
-    user = user_repository.find_user(name)
+@app.post("/create_account/{id}")
+def create_account(id: int, user_repository: Any = Depends(get_user_repository)):
+    account_repository = get_account_repository()
+    user = user_repository.find_user(id)
     if user is None:
         return {"error": "User not found"}
-    account = Account(user.id, 0)
-    account_repository = get_account_repository()
-    account_repository.add_account(account)
+    
     account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id and not acc.is_closed())
     if account_count >= 3:
         return {"error": "User already has 3 accounts"}
-    return {"message": f"Account created for user {name}"}
+    
+    account = Account(user.id, 0)
+    account_repository.add_account(account)
+    return {"message": f"Account created successfully. (Account ID: {account.get_id()})"}
 
 @app.post("/close_account/{account_id}")
 def close_account(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
@@ -154,6 +156,39 @@ def credit_endpoint(account_id: int, amount: int, account_repository: Any = Depe
     account.credit(amount)
     return {"sold": account.sold}
 
+@app.get("/accounts/{user_id}")
+def get_user_accounts(user_id: int, account_repository: Any = Depends(get_account_repository)):
+    accounts = account_repository.find_user_accounts(user_id)
+    if not accounts:
+        return {"error": "No accounts found for this user"}
+    
+    return {
+        "accounts": [
+            {
+                "account_id": account.get_id(),
+                "sold": account.get_sold(),
+                "date_created": account.get_date_created()
+            }
+            for account in accounts
+            if not account.is_closed()
+        ]
+    }
+
+@app.get("/account_info/{account_id}")
+def account_info(account_id: int, account_repository: Any = Depends(get_account_repository)):
+    account = account_repository.find_account(account_id)
+    if not account:
+        return {"error": "Account not found"}
+    if account.is_closed():
+        return {"error": "Account is closed"}
+
+    return {
+        "account": {
+            "account_id": account.get_id(),
+            "sold": account.get_sold(),
+            "date_created": account.get_date_created()
+        }
+    }
 
 @app.get("/account_info/{user_id}")
 def account_info(user_id: int, account_repository: Any = Depends(get_account_repository)):
@@ -161,39 +196,19 @@ def account_info(user_id: int, account_repository: Any = Depends(get_account_rep
     if not accounts:
         return {"error": "No accounts found for this user"}
 
-    for account in accounts:
-        if account.is_closed():
-            continue
-        account_info = {
-            "account_id": account.get_id(),
-            "sold": account.get_sold(),
-            "date_created": account.get_date_created()
-        }
-    return {"accounts": [account_info for account in accounts]} 
-
-@app.post("/credit/{name}/{amount}")
-def credit_endpoint(name: str, amount: int, user_repository: Any = Depends(get_user_repository)):
-    user = user_repository.find_user(name)
-    if user is None:
-        return {"error": "User not found"}
-    if not user.get_account():
-        return {"error": "User has no accounts"}
-    user.get_account()[0].credit(amount)
-    return {"sold": user.account[0].sold}
-
-@app.post("/account_info/{name}")
-def account_info(name: str, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
-    user = user_repository.find_user(name)
-    for account in account_repository.accounts:
-        if account.get_user_id() == user.id:
-            return {
+    return {
+        "accounts": [
+            {
                 "account_id": account.get_id(),
                 "sold": account.get_sold(),
                 "date_created": account.get_date_created()
             }
-    return {"error": "Account not found"}
+            for account in accounts
+            if not account.is_closed()
+        ]
+    }
 
-@app.post("/cancel-transaction/{transaction_id}")
+@app.post("/cancel_transaction/{transaction_id}")
 def cancel_transaction(transaction_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
     transaction = None
     for transaction in transaction_repository.transactions:
@@ -210,7 +225,7 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
     transaction.is_cancelled = True
     return {"message": "Transaction cancelled successfully"}
 
-@app.post("/transaction-history/{account_id}")
+@app.post("/transaction_history/{account_id}")
 def transaction_history(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
     account = account_repository.find_account(account_id)
     if account is None: 
@@ -224,7 +239,7 @@ def transaction_history(account_id: int, account_repository: Any = Depends(get_a
         if transaction.source == account or transaction.recipient == account:
             transactions.append({
                 "transaction_id": transaction.id,
-                "sourcde": transaction.source.get_id(),
+                "source": transaction.source.get_id(),
                 "recipient": transaction.recipient.get_id(),
                 "amount": transaction.amount,
                 "created_at": transaction.created_at,
@@ -233,7 +248,7 @@ def transaction_history(account_id: int, account_repository: Any = Depends(get_a
     transactions.sort(key=lambda x: x["created_at"], reverse=True)
     return {"transactions": transactions}
 
-@app.get("/transaction-info/{transaction_id}")
+@app.get("/transaction_info/{transaction_id}")
 def transaction_info(transaction_id: int, transaction_repository: Any = Depends(get_transaction_repository)):
     transaction = None
     for transaction in transaction_repository.transactions:

@@ -27,13 +27,13 @@ class Account():
         return self.date_created
 
     def credit(self, amount: int):
-        if getattr(self, "is_closed", False):
+        if self.is_closed():
             raise ValueError("Account is closed")
         self.sold += amount
         return self.sold
 
     def debit(self, amount: int):
-        if getattr(self, "is_closed", False):
+        if self.is_closed():
             raise ValueError("Account is closed")
         if amount > self.sold:
             raise ValueError("Insufficient funds")
