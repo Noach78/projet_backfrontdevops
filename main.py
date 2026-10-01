@@ -2,10 +2,26 @@ from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 from passlib.hash import bcrypt
 import jwt
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
-
 from classes.account import Account
+from classes.beneficiary import Beneficiary
+from classes.transaction import Transaction
+from classes.user import User
+from sqlmodel import SQLModel, Session, create_engine
+
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+def get_session():
+    with Session(engine) as session:
+        yield session
 
 class UserCreate(BaseModel):
     name: str
@@ -28,33 +44,25 @@ account_repository = None
 transaction_repository = None
 beneficiary_repository = None
 
-def get_user_repository():
-    global user_repository
-    if user_repository is None:
-        from classes.user import InMemoryUserRepository
-        user_repository = InMemoryUserRepository()
-    return user_repository
+def get_user_repository(session: Session = Depends(get_session)):
+    from classes.user import SQLUserRepository
+    return SQLUserRepository(session)
 
-def get_account_repository():
-    global account_repository
-    if account_repository is None:
-        from classes.account import InMemoryAccountRepository
-        account_repository = InMemoryAccountRepository()
-    return account_repository
+def get_account_repository(session: Session = Depends(get_session)):
+    from classes.account import SQLAccountRepository
+    return SQLAccountRepository(session)
 
-def get_transaction_repository():
-    global transaction_repository
-    if transaction_repository is None:
-        from classes.transaction import InMemoryTransactionRepository
-        transaction_repository = InMemoryTransactionRepository()
-    return transaction_repository
+def get_transaction_repository(session: Session = Depends(get_session)):
+    from classes.transaction import SQLTransactionRepository
+    return SQLTransactionRepository(session)
 
-def get_beneficiary_repository():
-    global beneficiary_repository
-    if beneficiary_repository is None:
-        from classes.beneficiary import InMemoryBeneficiaryRepository
-        beneficiary_repository = InMemoryBeneficiaryRepository()
-    return beneficiary_repository
+def get_beneficiary_repository(session: Session = Depends(get_session)):
+    from classes.beneficiary import SQLBeneficiaryRepository
+    return SQLBeneficiaryRepository(session)
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
 
 @app.get("/users")
 def get_users(user_repository: Any = Depends(get_user_repository)):
@@ -77,11 +85,14 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
         return {"Error !": "Your password is too short"}
 
     user_data.password = bcrypt.hash(user_data.password)
-    user = User(user_data.name, user_data.email, user_data.password)
+    user = User(name=user_data.name, email=user_data.email, hashed_password=user_data.password)
     user_repository.add_user(user)
     
-    create_account(user.id, user_repository)
-    account_repository.find_user_accounts(user.id)[0].credit(100)
+    create_account(user.id, user_repository, account_repository)
+    account = account_repository.find_user_accounts(user.id)[0]
+    account.credit(100)
+    account_repository.session.add(account)
+    account_repository.session.commit()
     return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
@@ -97,8 +108,7 @@ def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_rep
     return {"error": "Invalid credentials"}
 
 @app.post("/create_account/{id}")
-def create_account(id: int, user_repository: Any = Depends(get_user_repository)):
-    account_repository = get_account_repository()
+def create_account(id: int, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     user = user_repository.find_user(id)
     if user is None:
         return {"error": "User not found"}
@@ -107,7 +117,7 @@ def create_account(id: int, user_repository: Any = Depends(get_user_repository))
     if account_count >= 3:
         return {"error": "User already has 3 accounts"}
     
-    account = Account(user.id, 0)
+    account = Account(user_id=user.id, sold=0)
     account_repository.add_account(account)
     return {"message": f"Account created successfully. (Account ID: {account.get_id()})"}
 
@@ -119,7 +129,7 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
 
     has_pending_transaction = any(
         not transaction.is_cancelled
-        and (transaction.source == account or transaction.recipient == account)
+        and (transaction.source_id == account.id or transaction.recipient_id == account.id)
         for transaction in transaction_repository.transactions
     )
     if has_pending_transaction:
@@ -133,6 +143,9 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
     accounts[0].credit(account.get_sold())
 
     account.close()
+    account_repository.session.add(account)
+    account_repository.session.add(accounts[0])
+    account_repository.session.commit()
     return {"message": f"Account {account_id} closed"}
 
 @app.post("/transaction/{source_account_id}/{recipient_account_id}/{amount}")
@@ -166,6 +179,8 @@ def credit_endpoint(account_id: int, amount: int, account_repository: Any = Depe
     if amount <= 0:
         return {"error": "Amount must be greater than zero"}
     account.credit(amount)
+    account_repository.session.add(account)
+    account_repository.session.commit()
     return {"sold": account.sold}
 
 @app.get("/accounts/{user_id}")
@@ -229,12 +244,21 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
     else:
         return {"error": "Transaction not found or already cancelled"}
 
-    if (datetime.now() - transaction.created_at).total_seconds() > 5:
+    if (datetime.now(timezone.utc) - transaction.created_at).total_seconds() > 5:
         return {"error": "Transaction cannot be cancelled after 5 seconds"}
 
-    transaction.source.get_account().credit(transaction.amount)
-    transaction.recipient.get_account().debit(transaction.amount)
+    source = account_repository.find_account(transaction.source_id)
+    recipient = account_repository.find_account(transaction.recipient_id)
+    if source is None or recipient is None:
+        return {"error": "Transaction accounts not found"}
+    source.credit(transaction.amount)
+    recipient.debit(transaction.amount)
+    account_repository.session.add(source)
+    account_repository.session.add(recipient)
+    account_repository.session.commit()
     transaction.is_cancelled = True
+    transaction_repository.session.add(transaction)
+    transaction_repository.session.commit()
     return {"message": "Transaction cancelled successfully"}
 
 @app.post("/transaction_history/{account_id}")
@@ -248,11 +272,11 @@ def transaction_history(account_id: int, account_repository: Any = Depends(get_a
     
     transactions = []
     for transaction in transaction_repository.transactions:
-        if transaction.source == account or transaction.recipient == account:
+        if transaction.source_id == account.id or transaction.recipient_id == account.id:
             transactions.append({
                 "transaction_id": transaction.id,
-                "source": transaction.source.get_id(),
-                "recipient": transaction.recipient.get_id(),
+                "source": transaction.source_id,
+                "recipient": transaction.recipient_id,
                 "amount": transaction.amount,
                 "created_at": transaction.created_at,
                 "is_cancelled": transaction.is_cancelled
@@ -271,8 +295,8 @@ def transaction_info(transaction_id: int, transaction_repository: Any = Depends(
     
     return {
         "transaction_id": transaction.id,
-        "source": transaction.source.get_id(),
-        "recipient": transaction.recipient.get_id(),
+        "source": transaction.source_id,
+        "recipient": transaction.recipient_id,
         "amount": transaction.amount,
         "created_at": transaction.created_at,
         "is_cancelled": transaction.is_cancelled
@@ -299,7 +323,11 @@ def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository:
         return {"error": "Beneficiary name must be provided"}
 
     from classes.beneficiary import Beneficiary
-    new_beneficiary = Beneficiary(beneficiary_data.owner_id, beneficiary_data.name, beneficiary_data.account_id)
+    new_beneficiary = Beneficiary(
+        owner_id=beneficiary_data.owner_id,
+        name=beneficiary_data.name,
+        account_id=beneficiary_data.account_id,
+    )
     beneficiary_repository.add_beneficiary(new_beneficiary)
 
     return {"message": f"Beneficiary {beneficiary_data.name} added successfully. (Beneficiary ID: {new_beneficiary.id})"}
