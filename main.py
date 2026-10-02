@@ -127,9 +127,11 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
     if account is None:
         return {"error": "Account not found"}
 
+    now = datetime.now(timezone.utc)
     has_pending_transaction = any(
         not transaction.is_cancelled
         and (transaction.source_id == account.id or transaction.recipient_id == account.id)
+        and (now - transaction.created_at).total_seconds() <= 5
         for transaction in transaction_repository.transactions
     )
     if has_pending_transaction:
