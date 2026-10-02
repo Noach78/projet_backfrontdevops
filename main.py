@@ -303,17 +303,17 @@ def transaction_info(transaction_id: int, transaction_repository: Any = Depends(
     }
 
 @app.post("/add_beneficiary")
-def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository: Any = Depends(get_beneficiary_repository), account_repository: Any = Depends(get_account_repository)):
-    owner_account = account_repository.find_account(beneficiary_data.owner_id)
-    if owner_account is None:
-        return {"error": "Owner account not found"}
-
-    if owner_account.get_user_id() == beneficiary_data.account_id:
-        return {"error": "Beneficiary cannot be the same as the owner's account"}
+def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository: Any = Depends(get_beneficiary_repository), account_repository: Any = Depends(get_account_repository), user_repository: Any = Depends(get_user_repository)):
+    owner_user = user_repository.find_user(beneficiary_data.owner_id)
+    if owner_user is None:
+        return {"error": "Owner user not found"}
 
     beneficiary_account = account_repository.find_account(beneficiary_data.account_id)
     if beneficiary_account is None:
         return {"error": "Beneficiary account not found"}
+
+    if beneficiary_account.get_user_id() == owner_user.id:
+        return {"error": "Beneficiary cannot be the same as the owner's account"}
 
     for existing_beneficiary in beneficiary_repository.beneficiaries:
         if existing_beneficiary.owner_id == beneficiary_data.owner_id and existing_beneficiary.account_id == beneficiary_data.account_id:
@@ -333,10 +333,10 @@ def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository:
     return {"message": f"Beneficiary {beneficiary_data.name} added successfully. (Beneficiary ID: {new_beneficiary.id})"}
 
 @app.get("/beneficiaries/{owner_id}")
-def get_beneficiaries(owner_id: int, beneficiary_repository: Any = Depends(get_beneficiary_repository), account_repository: Any = Depends(get_account_repository)):
-    owner_account = account_repository.find_account(owner_id)
-    if owner_account is None:
-        return {"error": "Owner account not found"}
+def get_beneficiaries(owner_id: int, beneficiary_repository: Any = Depends(get_beneficiary_repository), user_repository: Any = Depends(get_user_repository)):
+    owner_user = user_repository.find_user(owner_id)
+    if owner_user is None:
+        return {"error": "Owner user not found"}
 
     beneficiaries = [
         {

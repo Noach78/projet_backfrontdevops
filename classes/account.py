@@ -141,6 +141,10 @@ class SQLAccountRepository(AccountRepository):
         self.session.add(source)
         self.session.add(recipient)
         self.session.commit()
-        tx = Transaction(source, recipient, amount)
+        tx = Transaction(
+            source_id=source.id,
+            recipient_id=recipient.id,
+            amount=amount,
+        )
         transaction_repository.add_transaction(tx)
         return tx
