@@ -1,9 +1,11 @@
-from fastapi import Depends, FastAPI
+import re
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from passlib.hash import bcrypt
 import jwt
 from datetime import datetime, timezone
 from typing import Any
+from fastapi.middleware.cors import CORSMiddleware
 from classes.account import Account
 from classes.beneficiary import Beneficiary
 from classes.transaction import Transaction
@@ -24,7 +26,7 @@ def get_session():
         yield session
 
 class UserCreate(BaseModel):
-    name: str
+    name: str | None = None
     email: str
     password: str
 
@@ -38,6 +40,12 @@ class BeneficiaryCreate(BaseModel):
     account_id: int
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 user_repository = None
 account_repository = None
@@ -77,15 +85,16 @@ def get_user(id: int, user_repository: Any = Depends(get_user_repository)):
 @app.post("/create_user")
 def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     from classes.user import User
-    for user in user_repository.users:
-        if user.email == user_data.email:
-            return {"error": "User with this email already exists"}
-    
-    if len(user_data.password) < 8 :
-        return {"Error !": "Your password is too short"}
+    email = user_data.email.strip().lower()
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(status_code=422, detail="Veuillez saisir une adresse email valide.")
+    if len(user_data.password) < 8:
+        raise HTTPException(status_code=422, detail="Le mot de passe doit contenir au moins 8 caractères.")
+    if user_repository.find_user_by_email(email):
+        raise HTTPException(status_code=409, detail="Cette adresse email est déjà utilisée.")
 
-    user_data.password = bcrypt.hash(user_data.password)
-    user = User(name=user_data.name, email=user_data.email, hashed_password=user_data.password)
+    name = user_data.name.strip() if user_data.name else email.split("@", 1)[0]
+    user = User(name=name, email=email, hashed_password=bcrypt.hash(user_data.password))
     user_repository.add_user(user)
     
     create_account(user.id, user_repository, account_repository)
@@ -93,7 +102,7 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     account.credit(100)
     account_repository.session.add(account)
     account_repository.session.commit()
-    return {"message": f"User {user_data.name} created successfully. (User ID: {user.id})"}
+    return {"message": f"User {name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
 def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_repository)):
