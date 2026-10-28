@@ -1,6 +1,5 @@
 import re
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from passlib.hash import bcrypt
 import jwt
@@ -52,6 +51,22 @@ user_repository = None
 account_repository = None
 transaction_repository = None
 beneficiary_repository = None
+JWT_SECRET = "secret"
+
+def get_current_user_id(authorization: str | None = Header(default=None)) -> int:
+    parts = authorization.split() if authorization else []
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Veuillez vous connecter.")
+
+    try:
+        payload = jwt.decode(parts[1], JWT_SECRET, algorithms=["HS256"])
+    except jwt.InvalidTokenError as error:
+        raise HTTPException(status_code=401, detail="Session invalide, veuillez vous reconnecter.") from error
+
+    user_id = payload.get("user_id")
+    if type(user_id) is not int:
+        raise HTTPException(status_code=401, detail="Session invalide, veuillez vous reconnecter.")
+    return user_id
 
 def get_user_repository(session: Session = Depends(get_session)):
     from classes.user import SQLUserRepository
@@ -68,20 +83,6 @@ def get_transaction_repository(session: Session = Depends(get_session)):
 def get_beneficiary_repository(session: Session = Depends(get_session)):
     from classes.beneficiary import SQLBeneficiaryRepository
     return SQLBeneficiaryRepository(session)
-
-security = HTTPBearer(auto_error=False)
-
-def get_current_user_id(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> int:
-    if not credentials:
-        raise HTTPException(status_code=401, detail="Vous devez être connecté.")
-    try:
-        payload = jwt.decode(credentials.credentials, "secret", algorithms=["HS256"])
-        user_id = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Token invalide.")
-        return user_id
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Token invalide ou expiré.")
 
 @app.on_event("startup")
 def on_startup():
@@ -131,7 +132,7 @@ def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_rep
         raise HTTPException(status_code=401, detail="Identifiants incorrects.")
     
     if bcrypt.verify(user_data.password, user.hashed_password):
-        token = jwt.encode({"user_id": user.id}, "secret", algorithm="HS256")
+        token = jwt.encode({"user_id": user.id}, JWT_SECRET, algorithm="HS256")
         return {
             "token": token,
             "accessToken": token,
@@ -184,24 +185,36 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
     return {"message": f"Account {account_id} closed"}
 
 @app.post("/transaction/{source_account_id}/{recipient_account_id}/{amount}")
-def transaction_endpoint(source_account_id: int, recipient_account_id: int, amount: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
+def transaction_endpoint(source_account_id: int, recipient_account_id: int, amount: int, user_id: int = Depends(get_current_user_id), account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
+    if not 0 < source_account_id < 2**63 - 1 or not 0 < recipient_account_id < 2**63 - 1:
+        raise HTTPException(status_code=404, detail="Compte source ou destinataire introuvable.")
+
     source_account = account_repository.find_account(source_account_id)
     recipient_account = account_repository.find_account(recipient_account_id)
 
     if source_account is None or recipient_account is None:
-        return {"error": "Source or recipient account not found"}
+        raise HTTPException(status_code=404, detail="Compte source ou destinataire introuvable.")
+
+    if source_account.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez pas débiter ce compte.")
+
+    if source_account.id == recipient_account.id:
+        raise HTTPException(status_code=400, detail="Le compte destinataire doit être différent du compte source.")
 
     if source_account.is_closed() or recipient_account.is_closed():
-        return {"error": "Source or recipient account is closed"}
+        raise HTTPException(status_code=400, detail="Le compte source ou destinataire est clôturé.")
     
     if amount <= 0:
-        return {"error": "Amount must be greater than zero"}
+        raise HTTPException(status_code=422, detail="Le montant doit être supérieur à zéro.")
+
+    if amount > source_account.sold:
+        raise HTTPException(status_code=400, detail="Solde insuffisant.")
     
     try:
         tx = account_repository.transaction(source_account, recipient_account, amount, transaction_repository)
         return {"message": f"Transaction successful. (Transaction ID: {tx.id})"}
-    except ValueError as e:
-        return {"error": str(e)}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
     
 
 @app.post("/credit/{account_id}/{amount}")
@@ -240,11 +253,25 @@ def get_user_accounts(
     accounts = account_repository.find_user_accounts(user_id)
     if not accounts:
         return {"accounts": []}
-    
     return {
         "accounts": [
             {
                 "account_id": account.get_id(),
+                "sold": account.get_sold(),
+                "date_created": account.get_date_created()
+            }
+            for account in accounts
+            if not account.is_closed()
+        ]
+    }
+
+@app.get("/my_accounts")
+def get_my_accounts(user_id: int = Depends(get_current_user_id), account_repository: Any = Depends(get_account_repository)):
+    accounts = account_repository.find_user_accounts(user_id)
+    return {
+        "accounts": [
+            {
+                "account_id": str(account.get_id()),
                 "sold": account.get_sold(),
                 "date_created": account.get_date_created()
             }
