@@ -30,6 +30,7 @@ deux pour pouvoir créer un compte.
 
    Ouvrir l'adresse indiquée par Vite, généralement `http://localhost:5173`.
 
-Le front envoie les requêtes d'inscription à `http://localhost:8000/create_user`.
+Le front envoie les requêtes d'inscription à `http://localhost:8000/create_user` (ou `/auth/register`) et les requêtes de connexion à `http://localhost:8000/login_user` (ou `/auth/login`).
 Si l'API ne démarre pas, vérifier que les dépendances Python du projet sont
-installées dans `back/.venv`.
+installées dans `.venv` (avec `pip install -r back/requirements.txt`).
+

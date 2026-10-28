@@ -83,6 +83,7 @@ def get_user(id: int, user_repository: Any = Depends(get_user_repository)):
     return {"id": user.id, "name": user.name, "email": user.email}
             
 @app.post("/create_user")
+@app.post("/auth/register")
 def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     from classes.user import User
     email = user_data.email.strip().lower()
@@ -105,16 +106,22 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     return {"message": f"User {name} created successfully. (User ID: {user.id})"}
 
 @app.post("/login_user")
+@app.post("/auth/login")
 def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_repository)):
-    user = user_repository.find_user_by_email(user_data.email)
+    email = user_data.email.strip().lower()
+    user = user_repository.find_user_by_email(email)
     if user is None:
-        return {"error": "User with this email not found"}
+        raise HTTPException(status_code=401, detail="Identifiants incorrects.")
     
     if bcrypt.verify(user_data.password, user.hashed_password):
         token = jwt.encode({"user_id": user.id}, "secret", algorithm="HS256")
-        return {"token": token}
+        return {
+            "token": token,
+            "accessToken": token,
+            "user": {"id": user.id, "name": user.name, "email": user.email}
+        }
 
-    return {"error": "Invalid credentials"}
+    raise HTTPException(status_code=401, detail="Identifiants incorrects.")
 
 @app.post("/create_account/{id}")
 def create_account(id: int, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
