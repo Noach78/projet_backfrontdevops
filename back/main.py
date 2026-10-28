@@ -80,6 +80,8 @@ def get_users(user_repository: Any = Depends(get_user_repository)):
 @app.get("/user_info/{id}")
 def get_user(id: int, user_repository: Any = Depends(get_user_repository)):
     user = user_repository.find_user(id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
     return {"id": user.id, "name": user.name, "email": user.email}
             
 @app.post("/create_user")
