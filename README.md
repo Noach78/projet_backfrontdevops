@@ -2,8 +2,8 @@
 
 ## Authors :
 
-- Noa (https://github.com/Nolan-30)
-- Nolan (https://github.com/Noach78)
+- Noa (https://github.com/Noach78)
+- Nolan (https://github.com/Nolan-30)
 - Maxence (https://github.com/maxenceb91)
 
 ## Lancer le projet en local
