@@ -14,6 +14,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/dashboard" element={<HomePage />} />
         </Route>
       </Route>
 

@@ -1,18 +1,29 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Layout() {
+  const { token, logout } = useAuth();
+
   return (
     <>
-      <header>
-        <nav>
+      <header className="app-header">
+        <nav className="app-nav">
           <NavLink to="/" end>
-            Home
+            Accueil
           </NavLink>
-          <NavLink to="/login">Login</NavLink>
-          <NavLink to="/register">Register</NavLink>
+          {token ? (
+            <button className="btn-logout" onClick={logout} type="button">
+              Déconnexion
+            </button>
+          ) : (
+            <>
+              <NavLink to="/login">Connexion</NavLink>
+              <NavLink to="/register">Inscription</NavLink>
+            </>
+          )}
         </nav>
       </header>
-      <main>
+      <main className="app-main">
         <Outlet />
       </main>
     </>
