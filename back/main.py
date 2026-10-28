@@ -1,5 +1,6 @@
 import re
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from passlib.hash import bcrypt
 import jwt
@@ -67,6 +68,20 @@ def get_transaction_repository(session: Session = Depends(get_session)):
 def get_beneficiary_repository(session: Session = Depends(get_session)):
     from classes.beneficiary import SQLBeneficiaryRepository
     return SQLBeneficiaryRepository(session)
+
+security = HTTPBearer(auto_error=False)
+
+def get_current_user_id(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> int:
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Vous devez être connecté.")
+    try:
+        payload = jwt.decode(credentials.credentials, "secret", algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Token invalide.")
+        return user_id
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré.")
 
 @app.on_event("startup")
 def on_startup():
@@ -188,24 +203,41 @@ def transaction_endpoint(source_account_id: int, recipient_account_id: int, amou
     
 
 @app.post("/credit/{account_id}/{amount}")
-def credit_endpoint(account_id: int, amount: int, account_repository: Any = Depends(get_account_repository)):
+def credit_endpoint(
+    account_id: int, 
+    amount: float, 
+    account_repository: Any = Depends(get_account_repository),
+    current_user_id: int = Depends(get_current_user_id)
+):
     account = account_repository.find_account(account_id)
     if account is None:
-        return {"error": "Account not found"}
+        raise HTTPException(status_code=404, detail="Compte introuvable.")
     if account_id == 0:
-        return {"error": "Account 0 is reserved"}
+        raise HTTPException(status_code=400, detail="Compte réservé.")
+    if account.is_closed():
+        raise HTTPException(status_code=400, detail="Ce compte est clôturé.")
+    if account.get_user_id() != current_user_id:
+        raise HTTPException(status_code=403, detail="Ce compte ne vous appartient pas.")
     if amount <= 0:
-        return {"error": "Amount must be greater than zero"}
+        raise HTTPException(status_code=400, detail="Le montant doit être supérieur à zéro.")
+    if amount > 10000:
+        raise HTTPException(status_code=400, detail="Le montant ne peut pas dépasser 10 000 €.")
     account.credit(amount)
     account_repository.session.add(account)
     account_repository.session.commit()
     return {"sold": account.sold}
 
 @app.get("/accounts/{user_id}")
-def get_user_accounts(user_id: int, account_repository: Any = Depends(get_account_repository)):
+def get_user_accounts(
+    user_id: int, 
+    account_repository: Any = Depends(get_account_repository),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    if user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez pas consulter les comptes d'un autre utilisateur.")
     accounts = account_repository.find_user_accounts(user_id)
     if not accounts:
-        return {"error": "No accounts found for this user"}
+        return {"accounts": []}
     
     return {
         "accounts": [
@@ -220,12 +252,18 @@ def get_user_accounts(user_id: int, account_repository: Any = Depends(get_accoun
     }
 
 @app.get("/account_info/{account_id}")
-def account_info(account_id: int, account_repository: Any = Depends(get_account_repository)):
+def account_info(
+    account_id: int, 
+    account_repository: Any = Depends(get_account_repository),
+    current_user_id: int = Depends(get_current_user_id)
+):
     account = account_repository.find_account(account_id)
     if not account:
-        return {"error": "Account not found"}
+        raise HTTPException(status_code=404, detail="Compte introuvable.")
     if account.is_closed():
-        return {"error": "Account is closed"}
+        raise HTTPException(status_code=400, detail="Ce compte est clôturé.")
+    if account.get_user_id() != current_user_id:
+        raise HTTPException(status_code=403, detail="Ce compte ne vous appartient pas.")
 
     return {
         "account": {
@@ -233,24 +271,6 @@ def account_info(account_id: int, account_repository: Any = Depends(get_account_
             "sold": account.get_sold(),
             "date_created": account.get_date_created()
         }
-    }
-
-@app.get("/account_info/{user_id}")
-def account_info(user_id: int, account_repository: Any = Depends(get_account_repository)):
-    accounts = account_repository.find_user_accounts(user_id)
-    if not accounts:
-        return {"error": "No accounts found for this user"}
-
-    return {
-        "accounts": [
-            {
-                "account_id": account.get_id(),
-                "sold": account.get_sold(),
-                "date_created": account.get_date_created()
-            }
-            for account in accounts
-            if not account.is_closed()
-        ]
     }
 
 @app.post("/cancel_transaction/{transaction_id}")
