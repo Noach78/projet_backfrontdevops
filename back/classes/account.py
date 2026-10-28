@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from classes.transaction import Transaction, TransactionRepository
 
 def new_id() -> int:
-    return uuid4().int % (2**63 - 1)
+    return uuid4().int % (2**53 - 1)
 
 class Account(SQLModel, table=True):
     id: int = Field(default_factory=new_id, primary_key=True)
