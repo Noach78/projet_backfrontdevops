@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import TransferPage from "./pages/TransferPage.jsx";
+import DepositPage from "./pages/DepositPage.jsx";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<HomePage />} />
           <Route path="/transfer" element={<TransferPage />} />
+          <Route path="/deposit/:accountId" element={<DepositPage />} />
         </Route>
       </Route>
 
