@@ -256,7 +256,7 @@ def get_user_accounts(
     return {
         "accounts": [
             {
-                "account_id": account.get_id(),
+                "account_id": str(account.get_id()),
                 "sold": account.get_sold(),
                 "date_created": account.get_date_created()
             }
@@ -294,11 +294,15 @@ def account_info(
     if account.get_user_id() != current_user_id:
         raise HTTPException(status_code=403, detail="Ce compte ne vous appartient pas.")
 
+    user_accounts = account_repository.find_user_accounts(current_user_id)
+    is_primary = len(user_accounts) > 0 and user_accounts[0].get_id() == account.get_id()
+
     return {
         "account": {
-            "account_id": account.get_id(),
+            "account_id": str(account.get_id()),
             "sold": account.get_sold(),
-            "date_created": account.get_date_created()
+            "date_created": account.get_date_created(),
+            "type": "principal" if is_primary else "secondaire"
         }
     }
 

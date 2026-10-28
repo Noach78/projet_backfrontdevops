@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function DepositPage() {
     const { accountId } = useParams();
     const { token } = useAuth();
+    const navigate = useNavigate();
 
     const [account, setAccount] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -67,6 +68,7 @@ export default function DepositPage() {
             }));
             setAmount("");
             alert("Dépôt effectué avec succès !");
+            navigate(`/account/${accountId}`);
         } catch (err) {
             setDepositError(err.message);
         } finally {
