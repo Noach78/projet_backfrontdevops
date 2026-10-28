@@ -19,6 +19,7 @@ export default function Layout() {
             <>
               <NavLink to="/login">Connexion</NavLink>
               <NavLink to="/register">Inscription</NavLink>
+              <NavLink to="/deposit">Depot</NavLink>
             </>
           )}
         </nav>
