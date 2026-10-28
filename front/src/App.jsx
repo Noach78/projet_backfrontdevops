@@ -22,7 +22,6 @@ export default function App() {
           <Route path="/accounts/:accountId/history" element={<HistoryPage />} />
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/deposit/:accountId" element={<DepositPage />} />
-          <Route path="/account/:accountId" element={<Account />} />
           <Route path="/accounts/:accountId" element={<Account />} />
         </Route>
       </Route>
