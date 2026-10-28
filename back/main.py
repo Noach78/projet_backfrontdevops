@@ -302,13 +302,16 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
     return {"message": "Transaction cancelled successfully"}
 
 @app.post("/transaction_history/{account_id}")
-def transaction_history(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
+def transaction_history(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository), current_user_id: int = Depends(get_current_user_id)):
     account = account_repository.find_account(account_id)
     if account is None: 
         return {"error": "Account not found"}
 
     if account.is_closed():
         return {"error": "Account is closed"}
+
+    if account.get_user_id() != current_user_id:
+        raise HTTPException(status_code=403, detail="Ce compte ne vous appartient pas.")
     
     transactions = []
     for transaction in transaction_repository.transactions:
