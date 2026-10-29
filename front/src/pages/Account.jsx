@@ -103,9 +103,9 @@ export default function Account() {
 
                 <div className="account-actions">
                     <Link to={`/deposit/${account?.account_id}`} className="btn-primary"> Faire un dépôt </Link>
-                    <Link to="/" className="btn-secondary"> Retour au tableau de bord </Link>
                     <Link to="/transfer" className="btn-secondary"> Faire un virement </Link>
                     <Link to={`/accounts/${account?.account_id}/history`} className="btn-secondary"> Voir mes opérations </Link>
+                    <Link to="/" className="btn-secondary"> Retour au tableau de bord </Link>
                 </div>
             </section>
         </main>
