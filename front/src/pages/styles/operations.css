@@ -32,6 +32,75 @@
   margin-bottom: 26px;
 }
 
+.add-beneficiary-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgb(23 43 58 / 3%);
+}
+
+.add-beneficiary-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid #cbd6de;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.add-beneficiary-form input::placeholder {
+  color: #82919b;
+}
+
+.add-beneficiary-form input:focus {
+  border-color: var(--teal);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(8 127 140 / 14%);
+}
+
+.add-beneficiary-form button {
+  min-height: 48px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--teal);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.add-beneficiary-form button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--teal-dark);
+}
+
+.beneficiaries-page > [role="status"],
+.beneficiaries-page > [role="alert"] {
+  margin: 0 0 20px;
+  padding: 13px 16px;
+  border: 1px solid #cfe7d9;
+  border-radius: 10px;
+  background: #f1faf4;
+  color: var(--green);
+}
+
+.beneficiaries-page > [role="alert"] {
+  border-color: #f2d1ce;
+  background: #fff7f6;
+  color: var(--red);
+}
+
 .beneficiaries-list,
 .transactions-list {
   display: grid;
@@ -39,6 +108,13 @@
   padding: 0;
   gap: 13px;
   list-style: none;
+}
+
+@media (max-width: 700px) {
+  .add-beneficiary-form {
+    grid-template-columns: 1fr;
+    padding: 15px;
+  }
 }
 
 .beneficiary-item article,
