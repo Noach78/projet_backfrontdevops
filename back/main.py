@@ -153,16 +153,13 @@ def create_account(id: int, user_repository: Any = Depends(get_user_repository),
     
     account = Account(user_id=user.id, sold=0)
     account_repository.add_account(account)
-    return {
-        "message": "Votre nouveau compte a été créé avec succès.",
-        "account_id": account.id,
-    }
+    return HTTPException(status_code=201, detail=f"Account created successfully. (Account ID: {account.id})")
 
 @app.post("/close_account/{account_id}")
 def close_account(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
     account = account_repository.find_account(account_id)
     if account is None:
-        return {"error": "Account not found"}
+        raise HTTPException(status_code=404, detail="Account not found")
 
     now = datetime.now(timezone.utc)
     has_pending_transaction = any(
@@ -172,11 +169,11 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
         for transaction in transaction_repository.transactions
     )
     if has_pending_transaction:
-        return {"error": "Cannot close account with pending transactions"}
+        return HTTPException(status_code=400, detail="Cannot close account with pending transactions")
 
     accounts = account_repository.find_user_accounts(account.get_user_id())
     if accounts[0].get_id() == account_id:
-        return {"error": "Cannot close the primary account"}
+        return HTTPException(status_code=400, detail="Cannot close the primary account")
 
     account.debit(account.get_sold())
     accounts[0].credit(account.get_sold())
@@ -386,25 +383,25 @@ def transaction_info(transaction_id: int, transaction_repository: Any = Depends(
         "is_cancelled": transaction.is_cancelled
     }
 
-@app.post("/add_beneficiary")
+@app.post("/add_beneficiary", status_code=201)
 def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository: Any = Depends(get_beneficiary_repository), account_repository: Any = Depends(get_account_repository), user_repository: Any = Depends(get_user_repository)):
     owner_user = user_repository.find_user(beneficiary_data.owner_id)
     if owner_user is None:
-        return {"error": "Owner user not found"}
+        raise HTTPException(status_code=404, detail="L'utilisateur propriétaire n'a pas été trouvé")
 
     beneficiary_account = account_repository.find_account(beneficiary_data.account_id)
     if beneficiary_account is None:
-        return {"error": "Beneficiary account not found"}
+        raise HTTPException(status_code=404, detail="Ce compte bénéficiaire n'existe pas")
 
     if beneficiary_account.get_user_id() == owner_user.id:
-        return {"error": "Beneficiary cannot be the same as the owner's account"}
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas ajouter votre propre compte comme bénéficiaire")
 
     for existing_beneficiary in beneficiary_repository.beneficiaries:
         if existing_beneficiary.owner_id == beneficiary_data.owner_id and existing_beneficiary.account_id == beneficiary_data.account_id:
-            return {"error": "Beneficiary already added"}
+            raise HTTPException(status_code=400, detail="Ce compte bénéficiaire est déjà ajouté pour cet utilisateur")
 
     if not beneficiary_data.name.strip():
-        return {"error": "Beneficiary name must be provided"}
+        raise HTTPException(status_code=422, detail="Le nom du bénéficiaire ne peut pas être vide")
 
     from classes.beneficiary import Beneficiary
     new_beneficiary = Beneficiary(
@@ -414,7 +411,7 @@ def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository:
     )
     beneficiary_repository.add_beneficiary(new_beneficiary)
 
-    return {"message": f"Beneficiary {beneficiary_data.name} added successfully. (Beneficiary ID: {new_beneficiary.id})"}
+    return {"message": f"Beneficiary {beneficiary_data.name} added successfully for user {owner_user.name}"}
 
 @app.get("/beneficiaries/{owner_id}")
 def get_beneficiaries(owner_id: int, beneficiary_repository: Any = Depends(get_beneficiary_repository), user_repository: Any = Depends(get_user_repository)):

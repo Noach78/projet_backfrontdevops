@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -20,6 +19,12 @@ export default function BeneficiaryPage() {
     const [beneficiaries, setBeneficiaries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [response, setResponse] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [form, setForm] = useState({
+        name: "",
+        account_id: "",
+    });
 
     useEffect(() => {
         const userId = token ? getUserIdFromToken(token) : null;
@@ -54,11 +59,80 @@ export default function BeneficiaryPage() {
         return () => controller.abort();
     }, [token]);
 
+    function handleChange(event) {
+        const { name, value } = event.target;
+        setForm((prev) => ({ ...prev, [name]: value }));
+    }
+
+    async function handleSubmit(event) {
+        event.preventDefault();
+        const ownerId = token ? getUserIdFromToken(token) : null;
+        if (!ownerId) {
+            setResponse({ type: "error", message: "Session invalide. Veuillez vous reconnecter." });
+            return;
+        }
+
+        const body = {
+            owner_id: ownerId,
+            name: form.name,
+            account_id: form.account_id,
+        };
+
+        setResponse(null);
+        setIsSubmitting(true);
+
+        try {
+            const result = await api(`${apiUrl}/add_beneficiary`, {
+                method: "POST",
+                body,
+                token,
+            });
+
+            setResponse({ type: "success", message: result.message });
+            setForm({ name: "", account_id: "" });
+
+            const data = await api(`${apiUrl}/beneficiaries/${ownerId}`, { token });
+            setBeneficiaries(data.beneficiaries ?? []);
+        } catch (error) {
+            setResponse({ type: "error", message: error.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
     return (
         <section className="beneficiaries-page">
             <header>
                 <h1>Mes bénéficiaires</h1>
             </header>
+
+            <form className="add-beneficiary-form" onSubmit={handleSubmit}>
+                <input
+                    name="name"
+                    type="text"
+                    placeholder="Nom du bénéficiaire"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                />
+                <input
+                    name="account_id"
+                    type="text"
+                    placeholder="Numéro de compte"
+                    value={form.account_id}
+                    onChange={handleChange}
+                    required
+                />
+                <button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Ajout en cours…" : "Ajouter"}
+                </button>
+            </form>
+
+            {response && (
+                <p role={response.type === "error" ? "alert" : "status"}>
+                    {response.message}
+                </p>
+            )}
 
             {loading ? (
                 <p role="status">Chargement de vos bénéficiaires…</p>

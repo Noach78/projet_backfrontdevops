@@ -41,7 +41,7 @@ export default function HistoryPage() {
         : error ? <p role="alert">{error}</p>
           : transactions.length === 0 ? <p>Aucune transaction pour ce compte.</p>
             : (
-              <ol aria-label="Transactions, de la plus récente à la plus ancienne">
+              <ol>
                 {transactions.map((transaction) => {
                   const outgoing = String(transaction.source) === String(accountId);
                   return (
