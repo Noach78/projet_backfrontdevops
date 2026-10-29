@@ -132,7 +132,6 @@ export default function BeneficiaryPage() {
                 </p>
             )}
 
-            {loading ? (
             {!userId ? (
                 <p role="alert" className="form-error">Session invalide. Veuillez vous reconnecter.</p>
             ) : loading ? (
