@@ -8,8 +8,9 @@ import TransferPage from "./pages/TransferPage.jsx";
 import DepositPage from "./pages/DepositPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import Account from "./pages/AccountPage.jsx";
-import AllAccounts from "./pages/AllAccountsPage.jsx";
-import CreateAccount from "./pages/CreateAccount.jsx";
+import AllAccountsPage from "./pages/AllAccountsPage.jsx";
+import CreateAccountPage from "./pages/CreateAccountPage.jsx";
+import BeneficiaryPage from "./pages/BeneficiaryPage.jsx";
 
 export default function App() {
   return (
@@ -25,8 +26,9 @@ export default function App() {
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/deposit/:accountId" element={<DepositPage />} />
           <Route path="/accounts/:accountId" element={<Account />} />
-          <Route path="/accounts" element={<AllAccounts />} />
-          <Route path="/accounts/new" element={<CreateAccount />} />
+          <Route path="/accounts" element={<AllAccountsPage />} />
+          <Route path="/accounts/new" element={<CreateAccountPage />} />
+          <Route path="/beneficiaries" element={<BeneficiaryPage />} />
         </Route>
       </Route>
 

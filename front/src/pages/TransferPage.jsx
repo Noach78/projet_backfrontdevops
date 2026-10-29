@@ -5,9 +5,20 @@ import "./styles/transfer.css";
 
 const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
+function getUserIdFromToken(token) {
+  try {
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const decodedPayload = window.atob(payload);
+    return decodedPayload.match(/"user_id"\s*:\s*(\d+)/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default function TransferPage() {
   const { token } = useAuth();
   const [accounts, setAccounts] = useState([]);
+  const [beneficiaries, setBeneficiaries] = useState([]);
   const [sourceAccountId, setSourceAccountId] = useState("");
   const [recipientAccountId, setRecipientAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -19,11 +30,18 @@ export default function TransferPage() {
   useEffect(() => {
     let active = true;
 
-    async function loadAccounts() {
+    async function loadData() {
+      const userId = token ? getUserIdFromToken(token) : null;
       try {
-        const data = await api(`${apiUrl}/my_accounts`, { token });
+        const [accountsData, beneficiariesData] = await Promise.all([
+          api(`${apiUrl}/my_accounts`, { token }),
+          userId
+            ? api(`${apiUrl}/beneficiaries/${userId}`, { token })
+            : Promise.resolve({ beneficiaries: [] }),
+        ]);
         if (active) {
-          setAccounts(data.accounts);
+          setAccounts(accountsData.accounts || []);
+          setBeneficiaries(beneficiariesData.beneficiaries || []);
         }
       } catch (requestError) {
         if (active) setError(requestError.message);
@@ -32,7 +50,7 @@ export default function TransferPage() {
       }
     }
 
-    loadAccounts();
+    loadData();
     return () => {
       active = false;
     };
@@ -99,6 +117,30 @@ export default function TransferPage() {
             ))}
           </select>
 
+          <label htmlFor="beneficiary-select">Choisir un bénéficiaire</label>
+          <select
+            id="beneficiary-select"
+            onChange={(event) => setRecipientAccountId(event.target.value)}
+            value={
+              beneficiaries.some(
+                (b) => String(b.account_id) === String(recipientAccountId),
+              )
+                ? recipientAccountId
+                : ""
+            }
+          >
+            <option value="">
+              {beneficiaries.length === 0
+                ? "Aucun bénéficiaire enregistré"
+                : "Sélectionner un bénéficiaire"}
+            </option>
+            {beneficiaries.map((beneficiary) => (
+              <option key={beneficiary.id} value={beneficiary.account_id}>
+                {beneficiary.name} — Compte {beneficiary.account_id}
+              </option>
+            ))}
+          </select>
+
           <label htmlFor="recipient-account">Numéro du compte destinataire</label>
           <input
             autoComplete="off"
@@ -106,6 +148,7 @@ export default function TransferPage() {
             inputMode="numeric"
             onChange={(event) => setRecipientAccountId(event.target.value)}
             pattern="[0-9]+"
+            placeholder="Ex : 12345678"
             required
             type="text"
             value={recipientAccountId}
