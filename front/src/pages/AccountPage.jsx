@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
-export default function Account() {
+export default function AccountPage() {
     const { accountId, id } = useParams();
     const currentAccountId = accountId || id;
     const { token } = useAuth();

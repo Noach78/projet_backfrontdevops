@@ -11,11 +11,13 @@ export default function Layout() {
           <NavLink to="/" end>
             Accueil
           </NavLink>
-          {token && <NavLink to="/transfer">Virement</NavLink>}
+
           {token ? (
-            <button className="btn-logout" onClick={logout} type="button">
-              Déconnexion
-            </button>
+            <>
+              <button className="btn-logout" onClick={logout} type="button">
+                Déconnexion
+              </button>
+            </>
           ) : (
             <>
               <NavLink to="/login">Connexion</NavLink>

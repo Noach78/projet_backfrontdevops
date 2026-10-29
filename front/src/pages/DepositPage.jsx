@@ -68,7 +68,7 @@ export default function DepositPage() {
             }));
             setAmount("");
             alert("Dépôt effectué avec succès !");
-            navigate(`/account/${accountId}`);
+            navigate(`/accounts/${accountId}`);
         } catch (err) {
             setDepositError(err.message);
         } finally {

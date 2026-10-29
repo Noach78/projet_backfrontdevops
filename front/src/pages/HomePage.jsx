@@ -58,7 +58,7 @@ export default function HomePage() {
       )}
 
       <p>Nombre de comptes : <strong>{accounts.length}</strong></p>
-      <p>Solde totale : <strong>{accounts.reduce((total, account) => total + account.sold, 0)}</strong></p>
+      <p>Solde totale : <strong>{accounts.reduce((total, account) => total + account.sold, 0)}</strong> €</p>
 
       <nav aria-label="Actions sur les comptes">
         <ul>
