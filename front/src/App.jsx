@@ -9,7 +9,6 @@ import DepositPage from "./pages/DepositPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import Account from "./pages/AccountPage.jsx";
 import AllAccounts from "./pages/AllAccountsPage.jsx";
-import Account from "./pages/Account.jsx";
 import CreateAccount from "./pages/CreateAccount.jsx";
 
 export default function App() {
