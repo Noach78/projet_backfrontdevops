@@ -22,7 +22,10 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<HomePage />} />
-          <Route path="/accounts/:accountId/history" element={<HistoryPage />} />
+          <Route
+            path="/accounts/:accountId/history"
+            element={<HistoryPage />}
+          />
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/deposit/:accountId" element={<DepositPage />} />
           <Route path="/accounts/:accountId" element={<Account />} />
