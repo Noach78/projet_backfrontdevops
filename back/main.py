@@ -141,19 +141,22 @@ def login_user(user_data: LoginUser, user_repository: Any = Depends(get_user_rep
 
     raise HTTPException(status_code=401, detail="Identifiants incorrects.")
 
-@app.post("/create_account/{id}")
+@app.post("/create_account/{id}", status_code=201)
 def create_account(id: int, user_repository: Any = Depends(get_user_repository), account_repository: Any = Depends(get_account_repository)):
     user = user_repository.find_user(id)
     if user is None:
-        return {"error": "User not found"}
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
     
     account_count = sum(1 for acc in account_repository.accounts if acc.get_user_id() == user.id and not acc.is_closed())
     if account_count >= 3:
-        return {"error": "User already has 3 accounts"}
+        raise HTTPException(status_code=400, detail="Vous avez déjà atteint la limite de 3 comptes actifs.")
     
     account = Account(user_id=user.id, sold=0)
     account_repository.add_account(account)
-    return {"message": f"Account created successfully. (Account ID: {account.get_id()})"}
+    return {
+        "message": "Votre nouveau compte a été créé avec succès.",
+        "account_id": account.id,
+    }
 
 @app.post("/close_account/{account_id}")
 def close_account(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
