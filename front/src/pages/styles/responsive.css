@@ -1,0 +1,107 @@
+@media (max-width: 850px) {
+  .accounts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-card {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-nav {
+    width: calc(100% - 24px);
+    min-height: 64px;
+    gap: 2px;
+  }
+
+  .app-nav a {
+    padding: 9px 8px;
+    font-size: 0.82rem;
+  }
+
+  .btn-logout {
+    padding: 8px 9px;
+    font-size: 0.8rem;
+  }
+
+  .app-main {
+    width: calc(100% - 32px);
+    padding: 32px 0 52px;
+  }
+
+  .page-heading,
+  .dashboard-heading,
+  .history-page .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-heading .button {
+    width: 100%;
+  }
+
+  .dashboard-metrics,
+  .accounts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-metrics {
+    margin-bottom: 40px;
+    gap: 12px;
+  }
+
+  .metric-card {
+    min-height: 138px;
+    padding: 21px;
+  }
+
+  .account-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-row,
+  .balance-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .detail-value {
+    text-align: left;
+  }
+
+  .account-actions > a,
+  .account-actions > div,
+  .account-actions .btn-primary,
+  .account-actions .btn-secondary {
+    width: 100%;
+  }
+
+  .account-actions > div {
+    display: block;
+  }
+
+  .account-actions > div > button {
+    width: 100%;
+  }
+
+  .not-found-page {
+    margin: 8vh 16px;
+    padding: 27px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

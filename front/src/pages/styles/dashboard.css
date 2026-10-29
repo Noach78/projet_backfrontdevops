@@ -1,0 +1,135 @@
+.dashboard-page {
+  padding-top: 8px;
+}
+
+.dashboard-heading {
+  margin-bottom: 36px;
+  align-items: center;
+}
+
+.dashboard-heading h1 {
+  max-width: 760px;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-heading > div > p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.dashboard-metrics {
+  display: grid;
+  margin-bottom: 54px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.metric-card {
+  display: flex;
+  min-height: 164px;
+  padding: 25px 28px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 26px rgb(23 43 58 / 4%);
+}
+
+.metric-card-highlight {
+  border-color: #cde5e7;
+  background: linear-gradient(135deg, #f3fbfb, #fff 85%);
+}
+
+.metric-label,
+.metric-note {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.metric-value {
+  margin: 9px 0 4px;
+  color: var(--ink);
+  font-size: clamp(1.8rem, 4vw, 2.55rem);
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+}
+
+.metric-card-highlight .metric-value {
+  color: var(--teal-dark);
+}
+
+.dashboard-actions {
+  margin-bottom: 20px;
+}
+
+.section-heading {
+  margin-bottom: 18px;
+}
+
+.section-heading h2 {
+  margin-bottom: 0;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.action-card {
+  display: flex;
+  min-height: 138px;
+  padding: 20px;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 0 8px 26px rgb(23 43 58 / 4%);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.action-card:hover {
+  transform: translateY(-3px);
+  border-color: #b7d9dc;
+  box-shadow: var(--shadow);
+}
+
+.action-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--teal-pale);
+  color: var(--teal-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.action-card strong,
+.action-card small {
+  display: block;
+}
+
+.action-card strong {
+  margin: 1px 0 7px;
+  font-size: 0.98rem;
+}
+
+.action-card small {
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.action-arrow {
+  margin-left: auto;
+  color: var(--teal);
+  font-size: 1.2rem;
+}

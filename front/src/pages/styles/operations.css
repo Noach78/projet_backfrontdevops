@@ -1,0 +1,128 @@
+.deposit-page {
+  width: min(100%, 600px);
+  margin: 8px auto;
+  padding: clamp(24px, 5vw, 38px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.deposit-page > p {
+  color: var(--muted);
+}
+
+.deposit-page > p strong {
+  color: var(--ink);
+}
+
+.deposit-page h1 {
+  margin-bottom: 22px;
+}
+
+.deposit-page .error-card {
+  margin: 0;
+}
+
+.beneficiaries-page {
+  padding-top: 8px;
+}
+
+.beneficiaries-page > header {
+  margin-bottom: 26px;
+}
+
+.beneficiaries-list,
+.transactions-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 13px;
+  list-style: none;
+}
+
+.beneficiary-item article,
+.transactions-list article {
+  padding: 21px 23px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgb(23 43 58 / 3%);
+}
+
+.beneficiary-item h2,
+.transactions-list h2 {
+  margin-bottom: 12px;
+  font-size: 1.08rem;
+}
+
+.beneficiary-item p,
+.transactions-list p {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.beneficiary-item p:last-child,
+.transactions-list p:last-child {
+  margin-bottom: 0;
+}
+
+.beneficiary-item strong {
+  color: var(--ink);
+}
+
+.history-page {
+  padding-top: 8px;
+}
+
+.history-page .page-heading {
+  align-items: center;
+}
+
+.history-page > p,
+.history-page > [role="status"],
+.history-page > [role="alert"] {
+  padding: 15px 17px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.history-page > p a {
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.history-page > [role="alert"] {
+  border-color: #f2d1ce;
+  background: #fff7f6;
+  color: var(--red);
+}
+
+.transactions-list {
+  counter-reset: transaction;
+}
+
+.transactions-list li {
+  position: relative;
+}
+
+.transactions-list article {
+  padding-left: 25px;
+  border-left: 3px solid #cde5e7;
+}
+
+.transactions-list h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.transactions-list h2::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  content: "";
+}

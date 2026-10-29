@@ -35,7 +35,7 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<p>Page introuvable</p>} />
+      <Route path="*" element={<main className="not-found-page"><h1>Page introuvable</h1><p>Cette page n’existe pas ou a été déplacée.</p></main>} />
     </Routes>
   );
 }

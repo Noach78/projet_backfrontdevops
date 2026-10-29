@@ -1,0 +1,72 @@
+.auth-card,
+.transfer-card,
+.form-card,
+.account-card,
+.error-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.status-card {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #d5e8ea;
+  border-radius: 10px;
+  background: #f0f9f9;
+  color: #315965;
+  line-height: 1.55;
+}
+
+.status-error,
+.error-card {
+  border-color: #f2d1ce;
+  background: #fff7f6;
+  color: var(--red);
+}
+
+.status-success {
+  border-color: #cfe7d9;
+  background: #f1faf4;
+  color: var(--green);
+}
+
+.loading-state,
+.empty-state,
+.error-card {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  line-height: 1.6;
+}
+
+.empty-state p,
+.loading-state p,
+.error-card p {
+  color: var(--muted);
+}
+
+.empty-state .button,
+.empty-state .btn-secondary,
+.error-card .button,
+.error-card .btn-secondary {
+  display: inline-flex;
+  margin-top: 4px;
+}
+
+.not-found-page {
+  max-width: 650px;
+  margin: 10vh auto;
+  padding: 40px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.not-found-page p {
+  margin-bottom: 0;
+  color: var(--muted);
+}

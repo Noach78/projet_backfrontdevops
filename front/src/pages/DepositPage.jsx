@@ -81,7 +81,7 @@ export default function DepositPage() {
     if (isLoading) {
         return (
             <main className="deposit-page">
-                <p>Vérification du compte en cours...</p>
+                <p className="status-card" role="status">Vérification du compte en cours...</p>
             </main>
         );
     }
@@ -106,7 +106,7 @@ export default function DepositPage() {
             <p>Compte n° : <strong>{accountId}</strong></p>
             {account?.sold !== undefined && <p>Solde actuel : {account.sold} €</p>}
 
-            {depositError && <p>{depositError}</p>}
+            {depositError && <p className="status-card status-error" role="alert">{depositError}</p>}
 
             <form onSubmit={handleDeposit}>
                 <label htmlFor="amount">Montant à déposer (€) :</label>

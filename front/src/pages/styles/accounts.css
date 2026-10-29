@@ -1,0 +1,203 @@
+.all-accounts-page {
+  padding-top: 8px;
+}
+
+.all-accounts-header {
+  margin-bottom: 26px;
+}
+
+.accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.account-item-card {
+  display: flex;
+  min-height: 260px;
+  padding: 22px;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: 0 8px 26px rgb(23 43 58 / 4%);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.account-item-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.account-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border: 1px solid #d5e8ea;
+  border-radius: 999px;
+  background: var(--teal-pale);
+  color: var(--teal-dark);
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+
+.card-balance {
+  margin: 26px 0 20px;
+}
+
+.balance-label {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.balance-amount {
+  color: var(--ink);
+  font-size: 1.75rem;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+}
+
+.card-bottom {
+  display: grid;
+  margin-top: auto;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.card-account-id {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.card-arrow {
+  margin-top: 19px;
+  color: var(--teal-dark);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.card-arrow:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.account-page {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.account-card {
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.account-header {
+  display: flex;
+  margin-bottom: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.account-header h1 {
+  margin-bottom: 0;
+}
+
+.account-details {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.detail-row,
+.balance-row {
+  display: flex;
+  padding: 17px 19px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-row:last-child,
+.balance-row {
+  border-bottom: 0;
+}
+
+.detail-label {
+  color: var(--muted);
+}
+
+.detail-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+.balance-row {
+  background: var(--surface-soft);
+}
+
+.balance-value {
+  color: var(--teal-dark);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.account-actions {
+  display: flex;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.account-actions > div {
+  display: contents;
+}
+
+.account-actions p {
+  width: 100%;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.account-actions [role="alert"] {
+  color: var(--red);
+}
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  min-height: 43px;
+  padding: 10px 14px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: #405563;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--teal-dark);
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  border-color: #b7d9dc;
+  background: var(--teal-pale);
+  color: var(--teal-dark);
+}
