@@ -7,7 +7,8 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import TransferPage from "./pages/TransferPage.jsx";
 import DepositPage from "./pages/DepositPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
-import Account from "./pages/Account.jsx";
+import Account from "./pages/AccountPage.jsx";
+import AllAccounts from "./pages/AllAccountsPage.jsx";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/transfer" element={<TransferPage />} />
           <Route path="/deposit/:accountId" element={<DepositPage />} />
           <Route path="/accounts/:accountId" element={<Account />} />
+          <Route path="/accounts" element={<AllAccounts />} />
         </Route>
       </Route>
 

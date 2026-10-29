@@ -24,15 +24,6 @@ export default function TransferPage() {
         const data = await api(`${apiUrl}/my_accounts`, { token });
         if (active) {
           setAccounts(data.accounts);
-          setSourceAccountId((currentId) =>
-            data.accounts.some(
-              (account) => String(account.account_id) === currentId,
-            )
-              ? currentId
-              : data.accounts[0]
-                ? String(data.accounts[0].account_id)
-                : "",
-          );
         }
       } catch (requestError) {
         if (active) setError(requestError.message);
@@ -64,6 +55,7 @@ export default function TransferPage() {
       const data = await api(`${apiUrl}/my_accounts`, { token });
       setAccounts(data.accounts);
       setSuccess("Virement effectué. Le solde a été actualisé.");
+      setSourceAccountId("");
       setRecipientAccountId("");
       setAmount("");
     } catch (requestError) {
@@ -95,7 +87,7 @@ export default function TransferPage() {
             required
             value={sourceAccountId}
           >
-            <option value="">Choisir un compte</option>
+            <option value="" disabled>Choisir un compte</option>
             {accounts.map((account) => (
               <option key={account.account_id} value={account.account_id}>
                 Compte {account.account_id} —{" "}

@@ -266,17 +266,24 @@ def get_user_accounts(
     }
 
 @app.get("/my_accounts")
+@app.get("/accounts")
 def get_my_accounts(user_id: int = Depends(get_current_user_id), account_repository: Any = Depends(get_account_repository)):
-    accounts = account_repository.find_user_accounts(user_id)
+    raw_accounts = [acc for acc in account_repository.find_user_accounts(user_id) if not acc.is_closed()]
+    
+    sorted_by_creation = sorted(raw_accounts, key=lambda a: a.date_created)
+    primary_id = sorted_by_creation[0].get_id() if sorted_by_creation else None
+
+    sorted_accounts = sorted(raw_accounts, key=lambda a: a.date_created, reverse=True)
+
     return {
         "accounts": [
             {
                 "account_id": str(account.get_id()),
                 "sold": account.get_sold(),
-                "date_created": account.get_date_created()
+                "date_created": account.get_date_created(),
+                "type": "principal" if account.get_id() == primary_id else "secondaire"
             }
-            for account in accounts
-            if not account.is_closed()
+            for account in sorted_accounts
         ]
     }
 
