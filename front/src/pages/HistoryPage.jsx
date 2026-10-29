@@ -34,14 +34,20 @@ export default function HistoryPage() {
   }, [accountId, token]);
 
   return (
-    <section>
-      <h1>Historique du compte n° {accountId}</h1>
-      <p><Link to={`/accounts/${accountId}`}>Retour au détail du compte</Link></p>
+    <section className="history-page">
+      <header className="page-heading">
+        <div>
+          <p className="eyebrow">Activité du compte</p>
+          <h1>Historique des opérations</h1>
+          <p>Compte n° {accountId}</p>
+        </div>
+        <Link className="button button-secondary" to={`/accounts/${accountId}`}>Retour au compte</Link>
+      </header>
       {loading ? <p role="status">Chargement des transactions…</p>
         : error ? <p role="alert">{error}</p>
           : transactions.length === 0 ? <p>Aucune transaction pour ce compte.</p>
             : (
-              <ol aria-label="Transactions, de la plus récente à la plus ancienne">
+              <ol className="transactions-list" aria-label="Transactions, de la plus récente à la plus ancienne">
                 {transactions.map((transaction) => {
                   const outgoing = String(transaction.source) === String(accountId);
                   return (

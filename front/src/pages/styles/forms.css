@@ -1,0 +1,81 @@
+.auth-form,
+.transfer-form,
+.deposit-page form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-form label,
+.transfer-form label,
+.deposit-page form label {
+  margin: 0 0 8px;
+  color: #344b59;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.auth-form input,
+.transfer-form input,
+.transfer-form select,
+.deposit-page form input {
+  width: 100%;
+  min-height: 48px;
+  margin: 0 0 19px;
+  padding: 11px 14px;
+  border: 1px solid #cbd6de;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.auth-form input:focus,
+.transfer-form input:focus,
+.transfer-form select:focus,
+.deposit-page form input:focus {
+  border-color: var(--teal);
+  outline: 3px solid rgb(8 127 140 / 14%);
+}
+
+.auth-form button,
+.transfer-form button,
+.create-account-page button,
+.deposit-page form button {
+  width: 100%;
+  min-height: 49px;
+}
+
+.transfer-card {
+  width: min(100%, 620px);
+  margin: 8px auto;
+  padding: clamp(24px, 5vw, 38px);
+}
+
+.transfer-card h1 {
+  font-size: clamp(1.65rem, 4vw, 2rem);
+}
+
+.transfer-description {
+  margin: 10px 0 26px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.create-account-page {
+  display: grid;
+  min-height: 55vh;
+  place-items: start center;
+}
+
+.form-card {
+  width: min(100%, 560px);
+  padding: clamp(26px, 5vw, 40px);
+}
+
+.form-card .page-description {
+  margin-bottom: 27px;
+}
+
+.create-account-page .text-link {
+  display: inline-block;
+  margin-top: 22px;
+}

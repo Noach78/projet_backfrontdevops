@@ -1,0 +1,205 @@
+:root {
+  --ink: #172b3a;
+  --muted: #647783;
+  --line: #e2e9ed;
+  --surface: #ffffff;
+  --surface-soft: #f7fafb;
+  --teal: #087f8c;
+  --teal-dark: #066a75;
+  --teal-pale: #e8f5f5;
+  --red: #b42318;
+  --green: #18794e;
+  --shadow: 0 16px 42px rgb(23 43 58 / 7%);
+}
+
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 86% 0%, rgb(8 127 140 / 6%), transparent 32rem),
+    #f3f6f8;
+}
+
+a {
+  color: var(--teal);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgb(8 127 140 / 28%);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--ink);
+  letter-spacing: -0.035em;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+.app-header {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  border-bottom: 1px solid rgb(226 233 237 / 90%);
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(14px);
+}
+
+.app-nav {
+  display: flex;
+  width: min(100% - 48px, 1180px);
+  min-height: 72px;
+  margin: 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-nav a {
+  padding: 10px 13px;
+  border-radius: 9px;
+  color: #425563;
+  font-size: 0.94rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.app-nav a:hover,
+.app-nav a.active {
+  color: var(--teal-dark);
+  background: var(--teal-pale);
+}
+
+.btn-logout {
+  margin-left: auto;
+  padding: 9px 14px;
+  border: 1px solid #f1c9c5;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 650;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.btn-logout:hover {
+  border-color: #e9a7a0;
+  background: #fff3f2;
+}
+
+.app-main {
+  width: min(100% - 48px, 1180px);
+  min-height: calc(100vh - 72px);
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+
+.page-heading {
+  display: flex;
+  margin-bottom: 30px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.page-heading > div > p:last-child,
+.page-description {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  color: var(--teal);
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.button,
+.button-primary,
+.button-secondary,
+.auth-form button,
+.transfer-form button,
+.create-account-page button,
+.deposit-page form button {
+  display: inline-flex;
+  min-height: 46px;
+  padding: 12px 18px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.button:hover,
+.auth-form button:hover:not(:disabled),
+.transfer-form button:hover:not(:disabled),
+.create-account-page button:hover:not(:disabled),
+.deposit-page form button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button-primary,
+.auth-form button,
+.transfer-form button,
+.create-account-page button,
+.deposit-page form button {
+  background: var(--teal);
+  color: #fff;
+  box-shadow: 0 6px 14px rgb(8 127 140 / 18%);
+}
+
+.button-primary:hover,
+.auth-form button:hover:not(:disabled),
+.transfer-form button:hover:not(:disabled),
+.create-account-page button:hover:not(:disabled),
+.deposit-page form button:hover:not(:disabled) {
+  background: var(--teal-dark);
+}
+
+.button-secondary {
+  border-color: var(--line);
+  background: #fff;
+  color: #405563;
+}
+
+.button-secondary:hover {
+  border-color: #b7d9dc;
+  background: var(--teal-pale);
+  color: var(--teal-dark);
+}
+
+button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.62;
+  transform: none !important;
+}

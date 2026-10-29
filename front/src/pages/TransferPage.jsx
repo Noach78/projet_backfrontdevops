@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import "./styles/transfer.css";
 
 const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 

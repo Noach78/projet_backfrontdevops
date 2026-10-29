@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -17,15 +16,13 @@ function getUserIdFromToken(token) {
 
 export default function BeneficiaryPage() {
     const { token } = useAuth();
+    const userId = token ? getUserIdFromToken(token) : null;
     const [beneficiaries, setBeneficiaries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        const userId = token ? getUserIdFromToken(token) : null;
         if (!userId) {
-            setError("Session invalide. Veuillez vous reconnecter.");
-            setLoading(false);
             return;
         }
 
@@ -52,7 +49,7 @@ export default function BeneficiaryPage() {
         loadBeneficiaries();
 
         return () => controller.abort();
-    }, [token]);
+    }, [token, userId]);
 
     return (
         <section className="beneficiaries-page">
@@ -60,7 +57,9 @@ export default function BeneficiaryPage() {
                 <h1>Mes bénéficiaires</h1>
             </header>
 
-            {loading ? (
+            {!userId ? (
+                <p role="alert" className="form-error">Session invalide. Veuillez vous reconnecter.</p>
+            ) : loading ? (
                 <p role="status">Chargement de vos bénéficiaires…</p>
             ) : error ? (
                 <p role="alert" className="form-error">{error}</p>
@@ -91,4 +90,3 @@ export default function BeneficiaryPage() {
         </section>
     );
 }
-
