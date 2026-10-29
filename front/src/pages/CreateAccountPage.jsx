@@ -42,17 +42,7 @@ export default function CreateAccount() {
                 message: `${data.message} (Compte n° ${data.account_id})`,
             });
         } catch (error) {
-            let message = "La création du compte a échoué. Veuillez réessayer.";
-            if (error.status === 400) {
-                message = "Vous avez déjà atteint la limite de 3 comptes actifs.";
-            } else if (error.status === 401 || error.status === 403) {
-                message = "Votre session a expiré. Veuillez vous reconnecter.";
-            } else if (error.status === 404) {
-                message = "Votre profil est introuvable. Veuillez vous reconnecter.";
-            } else if (!error.status) {
-                message = "Impossible de contacter le serveur. Vérifiez qu’il est démarré.";
-            }
-            setResponse({ type: "error", message });
+            setResponse({ type: "error", error: error.message });
         } finally {
             setIsSubmitting(false);
         }
