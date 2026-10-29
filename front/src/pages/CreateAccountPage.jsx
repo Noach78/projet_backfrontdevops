@@ -49,20 +49,23 @@ export default function CreateAccount() {
     }
 
     return (
-        <main>
-            <form onSubmit={handleSubmit}>
-                <h1>Créer un compte</h1>
-                <p>Le type du compte est attribué automatiquement.</p>
-                <button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Création en cours…" : "Ouvrir un compte"}
-                </button>
-            </form>
-            {response && (
-                <p role={response.type === "error" ? "alert" : "status"}>
-                    {response.message}
-                </p>
-            )}
-            <Link to="/dashboard">Retour au tableau de bord</Link>
+        <main className="create-account-page">
+            <section className="form-card">
+                <p className="eyebrow">Gestion de vos comptes</p>
+                <h1>Ouvrir un nouveau compte</h1>
+                <p className="page-description">Le type du compte est attribué automatiquement.</p>
+                <form onSubmit={handleSubmit}>
+                    <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Création en cours…" : "Ouvrir un compte"}
+                    </button>
+                </form>
+                {response && (
+                    <p className={`status-card ${response.type === "error" ? "status-error" : "status-success"}`} role={response.type === "error" ? "alert" : "status"}>
+                        {response.message}
+                    </p>
+                )}
+                <Link className="text-link" to="/dashboard">Retour au tableau de bord</Link>
+            </section>
         </main>
     );
 }

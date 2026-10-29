@@ -1,0 +1,8 @@
+@import "./pages/styles/base.css";
+@import "./pages/styles/components.css";
+@import "./pages/styles/dashboard.css";
+@import "./pages/styles/auth.css";
+@import "./pages/styles/forms.css";
+@import "./pages/styles/accounts.css";
+@import "./pages/styles/operations.css";
+@import "./pages/styles/responsive.css";
