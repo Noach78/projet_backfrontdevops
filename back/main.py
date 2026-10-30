@@ -109,6 +109,8 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
         raise HTTPException(status_code=422, detail="Veuillez saisir une adresse email valide.")
     if len(user_data.password) < 8:
         raise HTTPException(status_code=422, detail="Le mot de passe doit contenir au moins 8 caractères.")
+    if not re.search(r"[A-Z]", user_data.password) or not re.search(r"[a-z]", user_data.password) or not re.search(r"\d", user_data.password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", user_data.password):
+        raise HTTPException(status_code=422, detail="Le mot de passe doit contenir au moins une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial.")
     if user_repository.find_user_by_email(email):
         raise HTTPException(status_code=409, detail="Cette adresse email est déjà utilisée.")
 
