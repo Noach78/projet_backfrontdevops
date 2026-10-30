@@ -42,7 +42,7 @@ export default function CreateAccount() {
                 message: `${data.message} (Compte n° ${data.account_id})`,
             });
         } catch (error) {
-            setResponse({ type: "error", error: error.message });
+            setResponse({ type: "error", message: error.message });
         } finally {
             setIsSubmitting(false);
         }
