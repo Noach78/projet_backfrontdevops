@@ -123,7 +123,7 @@ def create_user(user_data: UserCreate, user_repository: Any = Depends(get_user_r
     account.credit(100)
     account_repository.session.add(account)
     account_repository.session.commit()
-    return {"message": f"User {name} created successfully. (User ID: {user.id})"}
+    return {"message": f"Utilisateur {name} créé avec succès. (Identifiant : {user.id})"}
 
 @app.post("/login_user")
 @app.post("/auth/login")
@@ -155,13 +155,13 @@ def create_account(id: int, user_repository: Any = Depends(get_user_repository),
     
     account = Account(user_id=user.id, sold=0)
     account_repository.add_account(account)
-    return HTTPException(status_code=201, detail=f"Account created successfully. (Account ID: {account.id})")
+    return HTTPException(status_code=201, detail=f"Compte créé avec succès. (Identifiant du compte : {account.id})")
 
 @app.post("/close_account/{account_id}")
 def close_account(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
     account = account_repository.find_account(account_id)
     if account is None:
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise HTTPException(status_code=404, detail="Compte introuvable.")
 
     now = datetime.now(timezone.utc)
     has_pending_transaction = any(
@@ -171,11 +171,11 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
         for transaction in transaction_repository.transactions
     )
     if has_pending_transaction:
-        return HTTPException(status_code=400, detail="Cannot close account with pending transactions")
+        return HTTPException(status_code=400, detail="Impossible de clôturer un compte avec des opérations en attente.")
 
     accounts = account_repository.find_user_accounts(account.get_user_id())
     if accounts[0].get_id() == account_id:
-        return HTTPException(status_code=400, detail="Cannot close the primary account")
+        return HTTPException(status_code=400, detail="Impossible de clôturer le compte principal.")
 
     account.debit(account.get_sold())
     accounts[0].credit(account.get_sold())
@@ -184,7 +184,7 @@ def close_account(account_id: int, account_repository: Any = Depends(get_account
     account_repository.session.add(account)
     account_repository.session.add(accounts[0])
     account_repository.session.commit()
-    return {"message": f"Account {account_id} closed"}
+    return {"message": f"Le compte {account_id} a été clôturé."}
 
 @app.post("/transaction/{source_account_id}/{recipient_account_id}/{amount}")
 def transaction_endpoint(source_account_id: int, recipient_account_id: int, amount: int, user_id: int = Depends(get_current_user_id), account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository)):
@@ -214,9 +214,13 @@ def transaction_endpoint(source_account_id: int, recipient_account_id: int, amou
     
     try:
         tx = account_repository.transaction(source_account, recipient_account, amount, transaction_repository)
-        return {"message": f"Transaction successful. (Transaction ID: {tx.id})"}
+        return {"message": f"Virement effectué avec succès. (Identifiant du virement : {tx.id})"}
     except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+        details = {
+            "Account is closed": "Le compte est clôturé.",
+            "Insufficient funds": "Solde insuffisant.",
+        }
+        raise HTTPException(status_code=400, detail=details.get(str(error), "Cette opération est impossible.")) from error
     
 
 @app.post("/credit/{account_id}/{amount}")
@@ -322,15 +326,15 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
         if transaction.id == transaction_id and not transaction.is_cancelled:
             break
     else:
-        return {"error": "Transaction not found or already cancelled"}
+        return {"error": "Virement introuvable ou déjà annulé."}
 
     if (datetime.now(timezone.utc) - transaction.created_at).total_seconds() > 5:
-        return {"error": "Transaction cannot be cancelled after 5 seconds"}
+        return {"error": "Le virement ne peut plus être annulé après 5 secondes."}
 
     source = account_repository.find_account(transaction.source_id)
     recipient = account_repository.find_account(transaction.recipient_id)
     if source is None or recipient is None:
-        return {"error": "Transaction accounts not found"}
+        return {"error": "Les comptes associés au virement sont introuvables."}
     source.credit(transaction.amount)
     recipient.debit(transaction.amount)
     account_repository.session.add(source)
@@ -339,16 +343,16 @@ def cancel_transaction(transaction_id: int, transaction_repository: Any = Depend
     transaction.is_cancelled = True
     transaction_repository.session.add(transaction)
     transaction_repository.session.commit()
-    return {"message": "Transaction cancelled successfully"}
+    return {"message": "Le virement a été annulé avec succès."}
 
 @app.post("/transaction_history/{account_id}")
 def transaction_history(account_id: int, account_repository: Any = Depends(get_account_repository), transaction_repository: Any = Depends(get_transaction_repository), current_user_id: int = Depends(get_current_user_id)):
     account = account_repository.find_account(account_id)
     if account is None: 
-        return {"error": "Account not found"}
+        return {"error": "Compte introuvable."}
 
     if account.is_closed():
-        return {"error": "Account is closed"}
+        return {"error": "Le compte est clôturé."}
 
     if account.get_user_id() != current_user_id:
         raise HTTPException(status_code=403, detail="Ce compte ne vous appartient pas.")
@@ -374,7 +378,7 @@ def transaction_info(transaction_id: int, transaction_repository: Any = Depends(
         if transaction.id == transaction_id:
             break
     else:
-        return {"error": "Transaction not found"}
+        return {"error": "Virement introuvable."}
     
     return {
         "transaction_id": transaction.id,
@@ -413,13 +417,13 @@ def add_beneficiary(beneficiary_data: BeneficiaryCreate, beneficiary_repository:
     )
     beneficiary_repository.add_beneficiary(new_beneficiary)
 
-    return {"message": f"Beneficiary {beneficiary_data.name} added successfully for user {owner_user.name}"}
+    return {"message": f"Le bénéficiaire {beneficiary_data.name} a été ajouté avec succès pour {owner_user.name}."}
 
 @app.get("/beneficiaries/{owner_id}")
 def get_beneficiaries(owner_id: int, beneficiary_repository: Any = Depends(get_beneficiary_repository), user_repository: Any = Depends(get_user_repository)):
     owner_user = user_repository.find_user(owner_id)
     if owner_user is None:
-        return {"error": "Owner user not found"}
+        return {"error": "Utilisateur propriétaire introuvable."}
 
     beneficiaries = [
         {
